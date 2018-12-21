@@ -35,27 +35,18 @@ I hope I will compile the plugin from CDT 9.4.0 for Eclipse Oxygen until the las
 
 ‼️ Versions to be done:
 
-❌️ CDT_9_6_0
-
-❌️ CDT_9_5_5
-
-❌️ CDT_9_5_4
-
-✔️ CDT_9_5_3
-
-❌️ CDT_9_5_2
-
-❌️ CDT_9_5_1
-
-❌️ CDT_9_5_0
-
-❌️ CDT_9_4_3
-
-❌️ CDT_9_4_2
-
-❌️ CDT_9_4_1
-
-❌️ CDT_9_4_0
+|   | Package   | Compilated package numbers             |
+|---|-----------|----------------------------------------|
+| ❌️ | CDT_9_5_5 |                                        |
+| ❌️ | CDT_9_5_4 |                                        |
+| ✔️ | CDT_9_5_3 | org.eclipse.cdt_9.5.3.201809121146.jar |
+| ❌️ | CDT_9_5_2 |                                        |
+| ❌️ | CDT_9_5_1 |                                        |
+| ❌️ | CDT_9_5_0 |                                        |
+| ❌️ | CDT_9_4_3 | org.eclipse.cdt_9.4.3.201802261533.jar |
+| ❌️ | CDT_9_4_2 |                                        |
+| ❌️ | CDT_9_4_1 |                                        |
+| ❌️ | CDT_9_4_0 |                                        |
 
 ## JDK Used:
 > **Eclipse CDT 9.5.3:** JDK 1.8
