@@ -76,4 +76,7 @@ I hope I will compile the plugin from CDT 9.4.0 for Eclipse Oxygen until the las
 | ❌️ | CDT_9_4_0 |
 
 ## JDK Used:
+
+> **Eclipse CDT 9.5.5:** JDK 1.8
+
 > **Eclipse CDT 9.5.3:** JDK 1.8
