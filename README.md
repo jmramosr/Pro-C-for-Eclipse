@@ -77,6 +77,16 @@ I hope I will compile the plugin from CDT 9.4.0 for Eclipse Oxygen until the las
 
 ## JDK Used:
 
-> **Eclipse CDT 9.5.5:** JDK 1.8
+All CDT versions uses JDK 1.8 to compile them, as you can see in the manifest.mf files in each version:
 
+> **Eclipse CDT 9.6.0:** JDK 1.8
+> **Eclipse CDT 9.5.5:** JDK 1.8
+> **Eclipse CDT 9.5.4:** JDK 1.8
 > **Eclipse CDT 9.5.3:** JDK 1.8
+> **Eclipse CDT 9.5.2:** JDK 1.8
+> **Eclipse CDT 9.5.1:** JDK 1.8
+> **Eclipse CDT 9.5.0:** JDK 1.8
+> **Eclipse CDT 9.4.3:** JDK 1.8
+> **Eclipse CDT 9.4.2:** JDK 1.8
+> **Eclipse CDT 9.4.1:** JDK 1.8
+> **Eclipse CDT 9.4.0:** JDK 1.8
