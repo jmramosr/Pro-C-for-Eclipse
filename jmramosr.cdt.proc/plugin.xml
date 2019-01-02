@@ -10,10 +10,10 @@
             id="proc"
             name="%language.name">
          <contentType
-               id="buntatsun.cdt.proc.pcSource">
+               id="jmramosr.cdt.proc.pcSource">
          </contentType>
          <contentType
-               id="buntatsun.cdt.proc.pcHeader">
+               id="jmramosr.cdt.proc.pcHeader">
          </contentType>
       </language>
    </extension>
@@ -24,7 +24,7 @@
          file-extensions="pc"
          priority="high"/>
    <content-type
-         base-type="buntatsun.cdt.proc.pcSource"
+         base-type="jmramosr.cdt.proc.pcSource"
          file-extensions="h"
          id="pcHeader"
          name="%proc.header.name"
