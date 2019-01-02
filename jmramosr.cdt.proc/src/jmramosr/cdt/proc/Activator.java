@@ -9,7 +9,7 @@ import org.osgi.framework.BundleContext;
 public class Activator implements BundleActivator {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "buntatsun.cdt.proc"; //$NON-NLS-1$
+	public static final String PLUGIN_ID = "jmramosr.cdt.proc"; //$NON-NLS-1$
 
 	private static BundleContext context;
 
