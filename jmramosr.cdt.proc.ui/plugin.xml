@@ -7,13 +7,13 @@
       <page
             category="org.eclipse.cdt.ui.preferences.CPluginPreferencePage"
             class="jmramosr.cdt.proc.ui.preferences.ProCPreferencePage"
-            id="buntatsun.cdt.proc.ui.ProCPreferencePage"
+            id="jmramosr.cdt.proc.ui.ProCPreferencePage"
             name="%proc">
       </page>
       <page
-            category="buntatsun.cdt.proc.ui.ProCPreferencePage"
+            category="jmramosr.cdt.proc.ui.ProCPreferencePage"
             class="jmramosr.cdt.proc.ui.preferences.ProCKeywordPreferencePage"
-            id="buntatsun.cdt.proc.ui.ProCKeywordPreferencePage"
+            id="jmramosr.cdt.proc.ui.ProCKeywordPreferencePage"
             name="%procHighlightingKeywords">
       </page>
    </extension>
@@ -31,7 +31,7 @@
             defaultEnabled="true"
             defaultTextColor="180,90,0"
             displayName="%procKeywordHighlighting.displayName"
-            id="buntatsun.cdt.proc.ui.ProCKeywordHighlighting"
+            id="jmramosr.cdt.proc.ui.ProCKeywordHighlighting"
             preferenceKey="proc-keywords"
             priority="6">
       </semanticHighlighting>
@@ -41,7 +41,7 @@
             defaultEnabled="true"
             defaultTextColor="180,90,0"
             displayName="%procSqlFunctionHighlighting.displayName"
-            id="buntatsun.cdt.proc.ui.ProCSqlFunctionHighlighting"
+            id="jmramosr.cdt.proc.ui.ProCSqlFunctionHighlighting"
             preferenceKey="proc-sql-functions"
             priority="5">
       </semanticHighlighting>
@@ -51,7 +51,7 @@
             defaultEnabled="true"
             defaultTextColor="180,90,0"
             displayName="%procUserDefinedHighlighting.displayName"
-            id="buntatsun.cdt.proc.ui.ProCUserDefinedHighlighting"
+            id="jmramosr.cdt.proc.ui.ProCUserDefinedHighlighting"
             preferenceKey="proc-user-defined"
             priority="4">
       </semanticHighlighting>
