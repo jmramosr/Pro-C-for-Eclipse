@@ -17,7 +17,7 @@ import jmramosr.cdt.proc.ui.preferences.PreferenceConstants;
 public class UIActivator extends AbstractUIPlugin {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "buntatsun.cdt.proc.ui"; //$NON-NLS-1$
+	public static final String PLUGIN_ID = "jmramosr.cdt.proc.ui"; //$NON-NLS-1$
 
 	// The shared instance
 	private static UIActivator plugin;
