@@ -7,13 +7,17 @@ Original work by https://github.com/buntatsu/cdt-proc. The firsts commits are, i
 
 ## How to compile the plugin
 
-🔘 You will need a **computer** with **JDK** installed. I suggest a list I tested it and it works. You can simply ignore it and use the most recent one. I tested on Windows, but you can use a osX or the Linux flavor you want.
+🔘 You will need a **computer** with **JDK** installed. I suggest a list I tested it and it works. You can simply ignore it and use the most recent **JDK**. I tested on Windows, but you can use a osX or the Linux flavor you want.
 
 🔘 Download from https://www.eclipse.org/downloads/packages/release the package you want. Ensure you choose the **Eclipse IDE for Eclipse Committers** version.
 
-🔘 Select the branch and download the workspace inside the branch repo into your computer.
+🔘 Open your **Eclipse IDE for Eclipse Committers**, create an empty workspace and install the version of CDT you want to use. You must install, at least, the main features. Restart the program.
 
-🔘 Open your **Eclipse IDE for Eclipse Committers** and open the workspace. Wait until completes the building of the workspace.
+🔘 Go here and select the branch which name contains the name of your CDT version. 
+
+🔘 Download the branch. It contains a workspace inside the branch.
+
+🔘 Open your **Eclipse IDE for Eclipse Committers** and open the workspace. Wait until completes the building of the workspace. It probably doesn't have the auto build.
 
 🔘 Select in any project the export option -> Deployable plugins and fragments -> select all -> Directory -> Select the directory -> Click Finish.
 
@@ -23,13 +27,23 @@ Original work by https://github.com/buntatsu/cdt-proc. The firsts commits are, i
 
 🔘 Download from https://www.eclipse.org/downloads/packages/release the package you want and install it. You will need the **Eclipse IDE for C/C++ Developers** version
 
-🔘 When you finish the installation, go to the *plugins* folder and find a file starts like this: _org.eclipse.cdt_X.Y.Z.YYYYMMDDhhmm.jar_. X.Y.Z stands for the version. Annotate it. (See the warnings about some versions)
+🔘 When you finish the installation, go to the *plugins* folder and find a file starts like this: _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_. X.Y.Z stands for the version. Annotate the date.
 
 🔘 Go here and download the release with that version, if I have it.
 
-🔘 If I don't have it, submit an issue.
+🔘 If I don't have it, submit an issue. Submit the name of your _org.eclipse.cdt_X.Y.Z.YYYYMMDDhhmm.jar_ file, not the _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ one!
 
-🔘 Replace the _org.eclipse.cdt_X.Y.Z.YYYYMMDDhhmm.jar_ and copy the other ones. Backup first the _org.eclipse.cdt_X.Y.Z.YYYYMMDDhhmm.jar_ file if you don't feel confident.
+🔘 Replace the _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ and copy the other ones. Backup first the _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ file if you don't feel confident.
+
+## How to upgrade the plugin with Eclipse CDT
+
+🔘 Update CDT to the release version you want. This step assumes you have the version **Eclipse IDE for C/C++ Developers** for your package. If you have been installed a previous Pro*C plugin for Eclipse in this version, restore the original _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_.
+
+🔘 Search in your plugins folder the lastest _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_. You will have, at least, 2 versions of the file _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_.
+
+🔘 Search in the releases list the lastest CDT version you have and download it.
+
+🔘 Replace the _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ and copy the other ones. Backup first the _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ file if you don't feel confident.
 
 ## Version List
 
@@ -49,54 +63,20 @@ Original work by https://github.com/buntatsu/cdt-proc. The firsts commits are, i
 
 ## Warnings
 
-⬜️ Be careful about CDT_9_4_1 and CDT_9_4_0! They use the same names with different dates.
+⬜️ Be careful about CDT_9_4_1 and CDT_9_4_0! They use the same names with different dates. That's why you can annotate the release date, it serves as reference number for me.
 
 ## TODO
 
 ✔️ Get the version numbers of each package and make the version list.
 
-❌️ Renaming the original plugin.
+✔️ Renaming the original plugin.
 
-I hope I will compile the plugin from CDT 9.4.0 for Eclipse Oxygen until the last release. Time is my enemy!
+❌️ Upload every version.
 
-‼️ Versions to be done:
+❌️ Buglist of everyday use.
 
-| Package   |
-|-----------|
-| CDT_9_6_0 |
-| CDT_9_5_5 |
-| CDT_9_5_4 |
-| CDT_9_5_3 |
-| CDT_9_5_2 |
-| CDT_9_5_1 |
-| CDT_9_5_0 |
-| CDT_9_4_3 |
-| CDT_9_4_2 |
-| CDT_9_4_1 |
-| CDT_9_4_0 |
+❌️ Not modifying the original _org.eclipse.cdt.core_X.Y.Z.YYYYMMDDhhmm.jar_ to use this plugin.
 
 ## JDK Used:
 
-All CDT versions uses JDK 1.8 to compile them, as you can see in the manifest.mf files in each version:
-
-> **Eclipse CDT 9.6.0:** JDK 1.8
->
-> **Eclipse CDT 9.5.5:** JDK 1.8
->
-> **Eclipse CDT 9.5.4:** JDK 1.8
->
-> **Eclipse CDT 9.5.3:** JDK 1.8
->
-> **Eclipse CDT 9.5.2:** JDK 1.8
->
-> **Eclipse CDT 9.5.1:** JDK 1.8
->
-> **Eclipse CDT 9.5.0:** JDK 1.8
->
-> **Eclipse CDT 9.4.3:** JDK 1.8
->
-> **Eclipse CDT 9.4.2:** JDK 1.8
->
-> **Eclipse CDT 9.4.1:** JDK 1.8
->
-> **Eclipse CDT 9.4.0:** JDK 1.8
+All CDT versions uses JDK 1.8 to compile them, as you can see in the manifest.mf files in each version.
