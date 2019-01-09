@@ -1,8 +1,8 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: %pluginName
+Bundle-Name: C/C++ Development Tools Core
 Bundle-SymbolicName: org.eclipse.cdt.core; singleton:=true
-Bundle-Version: 6.4.0.qualifier
+Bundle-Version: 6.4.0.201801130900
 Bundle-Activator: org.eclipse.cdt.core.CCorePlugin
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
