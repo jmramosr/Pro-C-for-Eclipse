@@ -289,14 +289,10 @@ public class PDOM extends PlatformObject implements IPDOM {
 	 *  209.0 - Alias templates and their instances take up more space than required, bug 516385.
 	 *  210.0 - Return type deduction, bug 408470.
 	 *  211.0 - Change representation of alias template instances, bug 516338.
-	 *  
-	 *  CDT 9.5 development (version not supported on the 9.4.x branch)
-	 *  212.0 - C++ constexpr if and if init-statement evaluation
-	 *  213.0 - C++ switch init-statement evaluation
 	 */
-	private static final int MIN_SUPPORTED_VERSION= version(213, 0);
-	private static final int MAX_SUPPORTED_VERSION= version(213, Short.MAX_VALUE);
-	private static final int DEFAULT_VERSION = version(213, 0);
+	private static final int MIN_SUPPORTED_VERSION= version(211, 0);
+	private static final int MAX_SUPPORTED_VERSION= version(211, Short.MAX_VALUE);
+	private static final int DEFAULT_VERSION = version(211, 0);
 
 	private static int version(int major, int minor) {
 		return (major << 16) + minor;
@@ -1238,28 +1234,27 @@ public class PDOM extends PlatformObject implements IPDOM {
 		PDOMName name;
 		if ((options & FIND_DECLARATIONS) != 0) {
 			for (name= pdomBinding.getFirstDeclaration(); name != null; name= name.getNextInBinding()) {
-				if (isCommitted(name) && !name.isPotentialMatch()) {
+				if (isCommitted(name)) {
 					names.add(name);
 				}
 			}
 		}
 		if ((options & FIND_DEFINITIONS) != 0) {
 			for (name = pdomBinding.getFirstDefinition(); name != null; name= name.getNextInBinding()) {
-				boolean findPotentialMatches = (options & FIND_POTENTIAL_MATCHES) != 0;
-				if (isCommitted(name) && (!name.isPotentialMatch() || findPotentialMatches)) {
+				if (isCommitted(name)) {
 					names.add(name);
 				}
 			}
 		}
 		if ((options & FIND_REFERENCES) != 0) {
 			for (name = pdomBinding.getFirstReference(); name != null; name= name.getNextInBinding()) {
-				if (isCommitted(name) && !name.isPotentialMatch()) {
+				if (isCommitted(name)) {
 					names.add(name);
 				}
 			}
 			for (IPDOMIterator<PDOMName> iterator = pdomBinding.getExternalReferences(); iterator.hasNext();) {
 				name = iterator.next();
-				if (isCommitted(name) && !name.isPotentialMatch())
+				if (isCommitted(name))
 					names.add(name);
 			}
 		}

@@ -56,7 +56,7 @@ import org.eclipse.core.runtime.PlatformObject;
 
 public class CPPVariable extends PlatformObject implements ICPPInternalDeclaredVariable {
 	private IASTName fDefinition;
-	private IASTName fDeclarations[];  // Allowed to have trailing nulls. Users must check or trim! 
+	private IASTName fDeclarations[];
 	private IType fType;
 	private IValue fInitialValue = IntegralValue.NOT_INITIALIZED;
 	private boolean fAllResolved;
@@ -119,8 +119,8 @@ public class CPPVariable extends PlatformObject implements ICPPInternalDeclaredV
 	}
 
 	@Override
-	public IASTName[] getDeclarations() {
-		return fDeclarations == null ? null : ArrayUtil.trim(fDeclarations);
+	public IASTNode[] getDeclarations() {
+		return fDeclarations;
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class CPPVariable extends PlatformObject implements ICPPInternalDeclaredV
 
 		boolean allResolved = fAllResolved;
 		fAllResolved = true;
-		fType = VariableHelpers.createType(this, fDefinition, getDeclarations(), allResolved);
+		fType = VariableHelpers.createType(this, fDefinition, fDeclarations, allResolved);
 
 		return fType;
 	}

@@ -428,19 +428,9 @@ public abstract class PDOMWriter implements IPDOMASTProcessor {
 		// to the index.
 		for (ICPPInternalDeclaredVariable variable : variables) {
 			if (isVariableIndexed(variable)) {
-				IASTNode lookupPoint = variable.getDefinition() != null
-					? variable.getDefinition()
-					: (variable.getDeclarations() != null && variable.getDeclarations().length > 0)
-						? variable.getDeclarations()[0]
-						: data.fAST;
-				CPPSemantics.pushLookupPoint(lookupPoint);
-				try {
-					// Type and initial value will be cached by the variable.
-					variable.getType();
-					variable.getInitialValue();
-				} finally {
-					CPPSemantics.popLookupPoint();
-				}
+				// Type and initial value will be cached by the variable.
+				variable.getType();
+				variable.getInitialValue();
 			}
 		}
 

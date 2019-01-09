@@ -197,9 +197,4 @@ public class GPPScannerExtensionConfiguration extends GNUScannerExtensionConfigu
 	public boolean supportUserDefinedLiterals() {
 		return true;
 	}
-
-	@Override
-	public boolean supportDigitSeparators() {
-		return true;
-	}
 }

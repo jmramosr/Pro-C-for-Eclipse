@@ -29,8 +29,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.ExecSimpleDeclarat
  * If statement in C++
  */
 public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIfStatement, ICPPExecutionOwner {
-    private boolean isConstexpr;
-    private IASTStatement initStatement;
     private IASTExpression condition;
     private IASTStatement thenClause;
     private IASTStatement elseClause;
@@ -46,7 +44,7 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 		setElseClause(elseClause);
 	}
 
-	public CPPASTIfStatement(IASTExpression condition, IASTStatement thenClause, IASTStatement elseClause) {
+    public CPPASTIfStatement(IASTExpression condition, IASTStatement thenClause, IASTStatement elseClause) {
 		setConditionExpression(condition);
 		setThenClause(thenClause);
 		setElseClause(elseClause);
@@ -60,8 +58,6 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 	@Override
 	public CPPASTIfStatement copy(CopyStyle style) {
 		CPPASTIfStatement copy = new CPPASTIfStatement();
-		copy.setIsConstexpr(isConstexpr);
-		copy.setInitializerStatement(initStatement == null ? null : initStatement.copy(style));
 		copy.setConditionDeclaration(condDecl == null ? null : condDecl.copy(style));
 		copy.setConditionExpression(condition == null ? null : condition.copy(style));
 		copy.setThenClause(thenClause == null ? null : thenClause.copy(style));
@@ -141,10 +137,7 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 
     		if (!((CPPASTIfStatement) stmt).acceptByAttributeSpecifiers(action)) return false;
 
-    		IASTNode child = stmt.getInitializerStatement();
-    		if (child != null && !child.accept(action))
-    			return false;
-    		child = stmt.getConditionExpression();
+    		IASTNode child = stmt.getConditionExpression();
     		if (child != null && !child.accept(action))
     			return false;
     		child= stmt.getConditionDeclaration();
@@ -182,28 +175,17 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 
 	@Override
 	public void replace(IASTNode child, IASTNode other) {
-		if (initStatement == child) {
-			other.setParent(child.getParent());
-			other.setPropertyInParent(child.getPropertyInParent());
-			initStatement = (IASTStatement) other;
-			return;
-		} 
-		
 		if (thenClause == child) {
 			other.setParent(child.getParent());
 			other.setPropertyInParent(child.getPropertyInParent());
 			thenClause = (IASTStatement) other;
 			return;
-		} 
-		
-		if (elseClause == child) {
+		} else if (elseClause == child) {
 			other.setParent(child.getParent());
 			other.setPropertyInParent(child.getPropertyInParent());
 			elseClause = (IASTStatement) other;
 			return;
-		} 
-		
-		if (condition == child || condDecl == child) {
+		} else if (condition == child || condDecl == child) {
 			if (other instanceof IASTExpression) {
 				setConditionExpression((IASTExpression) other);
 			} else if (other instanceof IASTDeclaration) {
@@ -211,7 +193,6 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 			}
 			return;
 		}
-		
 		super.replace(child, other);
 	}
 
@@ -232,33 +213,6 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
     }
 
 	@Override
-	public boolean isConstexpr() {
-		return isConstexpr;
-	}
-
-	@Override
-	public void setIsConstexpr(boolean isConstexpr) {
-		assertNotFrozen();
-		this.isConstexpr = isConstexpr;
-	}
-
-	@Override
-	public IASTStatement getInitializerStatement() {
-		return initStatement;
-	}
-
-	@Override
-	public void setInitializerStatement(IASTStatement statement) {
-        assertNotFrozen();
-        this.initStatement = statement;
-        if (statement != null) {
-        	statement.setParent(this);
-        	statement.setPropertyInParent(INIT_STATEMENT);
-        	statement = null;
-		}
-	}
-
-	@Override
 	public IScope getScope() {
 		if (scope == null)
             scope = new CPPBlockScope(this);
@@ -267,13 +221,12 @@ public class CPPASTIfStatement extends CPPASTAttributeOwner implements ICPPASTIf
 
 	@Override
 	public ICPPExecution getExecution() {
-		ICPPExecution initStmtExec = EvalUtil.getExecutionFromStatement(getInitializerStatement());
 		ICPPASTExpression conditionExpr = (ICPPASTExpression) getConditionExpression();
 		ICPPExecutionOwner conditionDecl = (ICPPExecutionOwner) getConditionDeclaration();
 		ICPPEvaluation conditionExprEval = conditionExpr != null ? conditionExpr.getEvaluation() : null;
 		ExecSimpleDeclaration conditionDeclExec = conditionDecl != null ? (ExecSimpleDeclaration) conditionDecl.getExecution() : null;
 		ICPPExecution thenClauseExec = EvalUtil.getExecutionFromStatement(getThenClause());
-		ICPPExecution elseClauseExec = EvalUtil.getExecutionFromStatement(getElseClause());
-		return new ExecIf(isConstexpr, initStmtExec, conditionExprEval, conditionDeclExec, thenClauseExec, elseClauseExec);
+		ICPPExecution elseClauseExec = getElseClause() != null ? EvalUtil.getExecutionFromStatement(getElseClause()) : null;
+		return new ExecIf(conditionExprEval, conditionDeclExec, thenClauseExec, elseClauseExec);
 	}
 }

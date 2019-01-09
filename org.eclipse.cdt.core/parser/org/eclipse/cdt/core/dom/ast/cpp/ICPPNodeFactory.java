@@ -105,11 +105,6 @@ public interface ICPPNodeFactory extends INodeFactory {
 	 */
 	public ICPPASTCapture newCapture();
 
-	/**
-	 * @since 6.5
-	 */
-	public ICPPASTInitCapture newInitCapture(ICPPASTDeclarator declarator);
-
 	@Override
 	public ICPPASTCastExpression newCastExpression(int operator, IASTTypeId typeId, IASTExpression operand);
 
@@ -228,11 +223,6 @@ public interface ICPPNodeFactory extends INodeFactory {
 	@Override
 	public ICPPASTLiteralExpression newLiteralExpression(int kind, String rep);
 
-	/**
-	 * @since 6.5
-	 */
-	public ICPPASTLiteralExpression newLiteralExpression(int kind, String rep, char[] numericCompilerSuffixes);
-
 	public ICPPASTNamespaceAlias newNamespaceAlias(IASTName alias, IASTName qualifiedName);
 
 	public ICPPASTNamespaceDefinition newNamespaceDefinition(IASTName name);
@@ -332,11 +322,6 @@ public interface ICPPNodeFactory extends INodeFactory {
 	 * @since 5.2
 	 */
 	public ICPPASTStaticAssertDeclaration newStaticAssertion(IASTExpression condition, ICPPASTLiteralExpression message);
-
-	/**
-	 * @since 6.5
-	 */
-	public ICPPASTStaticAssertDeclaration newStaticAssertion(IASTExpression condition);
 
 	public ICPPASTSwitchStatement newSwitchStatement();
 

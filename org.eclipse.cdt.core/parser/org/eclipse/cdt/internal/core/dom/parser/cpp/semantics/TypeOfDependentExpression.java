@@ -29,7 +29,6 @@ public class TypeOfDependentExpression extends CPPUnknownBinding implements ICPP
 	private final ICPPEvaluation fEvaluation;
 	// Whether this represents a decltype(expr), or a dependent type in another context.
 	private boolean fIsForDecltype;
-	private boolean fIsForTemplateAuto;
 
 	public TypeOfDependentExpression(ICPPEvaluation evaluation) {
 		this(evaluation, true);
@@ -39,7 +38,6 @@ public class TypeOfDependentExpression extends CPPUnknownBinding implements ICPP
 		super(null);
 		fEvaluation = evaluation;
 		fIsForDecltype = isForDecltype;
-		fIsForTemplateAuto = false;
 	}
 	
 	public ICPPEvaluation getEvaluation() {
@@ -52,14 +50,6 @@ public class TypeOfDependentExpression extends CPPUnknownBinding implements ICPP
 	
 	public void setIsForDecltype(boolean isForDecltype) {
 		fIsForDecltype = isForDecltype;
-	}
-
-	public boolean isForTemplateAuto() {
-		return fIsForTemplateAuto;
-	}
-
-	public void setForTemplateAuto(boolean isForTemplateAuto) {
-		fIsForTemplateAuto = isForTemplateAuto;
 	}
 
 	@Override
@@ -90,9 +80,6 @@ public class TypeOfDependentExpression extends CPPUnknownBinding implements ICPP
 		if (fIsForDecltype) {
 			firstBytes |= ITypeMarshalBuffer.FLAG1;
 		}
-		if (fIsForTemplateAuto) {
-			firstBytes |= ITypeMarshalBuffer.FLAG2;
-		}
 		buffer.putShort(firstBytes);
 		buffer.marshalEvaluation(fEvaluation, false);
 	}
@@ -101,10 +88,7 @@ public class TypeOfDependentExpression extends CPPUnknownBinding implements ICPP
 		ICPPEvaluation eval= buffer.unmarshalEvaluation();
 		if (eval != null) {
 			boolean isForDecltype = (firstBytes & ITypeMarshalBuffer.FLAG1) != 0;
-			boolean isForTemplateAuto = (firstBytes & ITypeMarshalBuffer.FLAG2) != 0;
-			TypeOfDependentExpression expression = new TypeOfDependentExpression(eval, isForDecltype);
-			expression.setForTemplateAuto(isForTemplateAuto);
-			return expression;
+			return new TypeOfDependentExpression(eval, isForDecltype);
 		}
 		return ProblemType.UNKNOWN_FOR_EXPRESSION;
 	}

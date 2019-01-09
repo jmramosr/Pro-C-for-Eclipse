@@ -59,7 +59,6 @@ public class Lexer implements ITokenSequence {
 		public boolean fSupportUTFLiterals= true;
 		public boolean fSupportRawStringLiterals= false;
 		public boolean fSupportUserDefinedLiterals = false; 
-		public boolean fSupportDigitSeparators = false;
 		public IncludeExportPatterns fIncludeExportPatterns;
 		
 		@Override
@@ -676,7 +675,7 @@ public class Lexer implements ITokenSequence {
     	fLog.handleProblem(problemID, arg, offset, fOffset);
     }
 
-	protected Token headerName(final int start, final boolean expectQuotes) throws OffsetLimitReachedException {
+    protected Token headerName(final int start, final boolean expectQuotes) throws OffsetLimitReachedException {
     	int length= 1;
 		boolean done = false;
 		int c= fCharPhase3;
@@ -1034,14 +1033,7 @@ public class Lexer implements ITokenSequence {
             		break;
             	}
             	break;
-
-			// C++ 14 literal separator
-			case '\'':
-				if (!fOptions.fSupportDigitSeparators) {
-					isPartOfNumber = false;
-				}
-				break;
-
+            
             case END_OF_INPUT:
 				if (fSupportContentAssist) {
 					throw new OffsetLimitReachedException(ORIGIN_LEXER, 

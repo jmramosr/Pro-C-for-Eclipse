@@ -165,9 +165,6 @@ public class CCodeFormatter extends CodeFormatter {
 				} catch (CoreException e) {
 					throw new AbortFormatting(e);
 				}
-				if (ast == null) {
-					throw new AbortFormatting("AST is null");  //$NON-NLS-1$
-				}
 				formatRegions(source, regions, edits, ast);
 			} finally {
 				index.releaseReadLock();

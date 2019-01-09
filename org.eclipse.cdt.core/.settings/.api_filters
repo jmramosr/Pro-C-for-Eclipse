@@ -4,6 +4,12 @@
         <filter id="403767336">
             <message_arguments>
                 <message_argument value="org.eclipse.cdt.core.build.ICBuildConfiguration"/>
+                <message_argument value="TOOLCHAIN_ID"/>
+            </message_arguments>
+        </filter>
+        <filter id="403767336">
+            <message_arguments>
+                <message_argument value="org.eclipse.cdt.core.build.ICBuildConfiguration"/>
                 <message_argument value="TOOLCHAIN_TYPE"/>
             </message_arguments>
         </filter>
@@ -65,6 +71,26 @@
             <message_arguments>
                 <message_argument value="org.eclipse.cdt.core.build.IToolChainProvider"/>
                 <message_argument value="removeToolChain(IToolChain)"/>
+            </message_arguments>
+        </filter>
+    </resource>
+    <resource path="src/org/eclipse/cdt/core/build/StandardBuildConfiguration.java" type="org.eclipse.cdt.core.build.StandardBuildConfiguration">
+        <filter id="336658481">
+            <message_arguments>
+                <message_argument value="org.eclipse.cdt.core.build.StandardBuildConfiguration"/>
+                <message_argument value="BUILD_COMMAND"/>
+            </message_arguments>
+        </filter>
+        <filter comment="No one extends this yet." id="336658481">
+            <message_arguments>
+                <message_argument value="org.eclipse.cdt.core.build.StandardBuildConfiguration"/>
+                <message_argument value="BUILD_CONTAINER"/>
+            </message_arguments>
+        </filter>
+        <filter id="336658481">
+            <message_arguments>
+                <message_argument value="org.eclipse.cdt.core.build.StandardBuildConfiguration"/>
+                <message_argument value="CLEAN_COMMAND"/>
             </message_arguments>
         </filter>
     </resource>

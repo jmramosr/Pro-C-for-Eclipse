@@ -65,8 +65,7 @@ public class StatementWriter extends NodeWriter {
 	private static final String CONTINUE = "continue"; //$NON-NLS-1$
 	private static final String BREAK = "break"; //$NON-NLS-1$
 	private static final String ELSE = "else"; //$NON-NLS-1$
-	private static final String IF = "if "; //$NON-NLS-1$
-	private static final String CONSTEXPR = "constexpr "; //$NON-NLS-1$
+	private static final String IF = "if ("; //$NON-NLS-1$
 	private static final String FOR = "for ("; //$NON-NLS-1$
 	private static final String DO_WHILE = " while ("; //$NON-NLS-1$
 	private static final String DO = "do"; //$NON-NLS-1$
@@ -217,18 +216,10 @@ public class StatementWriter extends NodeWriter {
 
 	private void writeIfStatement(IASTIfStatement ifStatement) {
 		scribe.print(IF);
-		final boolean isCPPIfStatement = ifStatement instanceof ICPPASTIfStatement;
-		if (isCPPIfStatement && ((ICPPASTIfStatement) ifStatement).isConstexpr()) {
-			scribe.print(CONSTEXPR);
-		}
-		scribe.print('(');
 		scribe.noNewLines();
-		if (isCPPIfStatement) {
+		if (ifStatement instanceof ICPPASTIfStatement) {
 			ICPPASTIfStatement cppIfStatment = (ICPPASTIfStatement) ifStatement;
-			IASTStatement initStatement = cppIfStatment.getInitializerStatement();
-			if (initStatement != null) {
-				writeStatement(initStatement, false);
-			}
+
 			if (cppIfStatment.getConditionDeclaration() == null) {
 				cppIfStatment.getConditionExpression().accept(visitor);
 			} else {
@@ -365,10 +356,6 @@ public class StatementWriter extends NodeWriter {
 		scribe.noNewLines();
 		if (switchStatement instanceof ICPPASTSwitchStatement) {
 			ICPPASTSwitchStatement cppSwitchStatement = (ICPPASTSwitchStatement) switchStatement;
-			IASTStatement initStatement = cppSwitchStatement.getInitializerStatement();
-			if (initStatement != null) {
-				writeStatement(initStatement, false);
-			}
 			if (cppSwitchStatement.getControllerDeclaration() == null) {
 				cppSwitchStatement.getControllerExpression().accept(visitor);
 			} else {

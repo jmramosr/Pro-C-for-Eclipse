@@ -67,9 +67,7 @@ import org.eclipse.core.runtime.PlatformObject;
  */
 public class CPPClosureType extends PlatformObject implements ICPPClassType, ICPPInternalBinding {
 	private final ICPPASTLambdaExpression fLambdaExpression;
-	private IType[] fParameterTypes;
-	private ICPPParameter[] fParameters;
-	protected ICPPMethod[] fMethods;
+	private ICPPMethod[] fMethods;
 	private ClassScope fScope;
 	// Used for generic lambdas; null otherwise.
 	private ICPPTemplateParameter[] fInventedTemplateParameters;
@@ -77,7 +75,7 @@ public class CPPClosureType extends PlatformObject implements ICPPClassType, ICP
 	public CPPClosureType(ICPPASTLambdaExpression lambdaExpr) {
 		fLambdaExpression= lambdaExpr;
 	}
-	
+
 	private ICPPMethod[] createMethods() {
 		boolean needConversionOperator=
 			fLambdaExpression.getCaptureDefault() == CaptureDefault.UNSPECIFIED &&
@@ -115,7 +113,10 @@ public class CPPClosureType extends PlatformObject implements ICPPClassType, ICP
 		final IType[] parameterTypes= getParameterTypes();
 		ft= new CPPFunctionType(returnType, parameterTypes, !isMutable(), false, false, false, false);
 
-		ICPPParameter[] params = getParameters();
+		ICPPParameter[] params = new ICPPParameter[parameterTypes.length];
+		for (int i = 0; i < params.length; i++) {
+			params[i]= new CPPParameter(parameterTypes[i], i);
+		}
 		char[] operatorParensName = OverloadableOperator.PAREN.toCharArray();
 		if (isGeneric()) {
 			m = new CPPImplicitMethodTemplate(getInventedTemplateParameterList(), scope, operatorParensName,
@@ -135,10 +136,7 @@ public class CPPClosureType extends PlatformObject implements ICPPClassType, ICP
 		if (needConversionOperator) {
 			final CPPFunctionType conversionTarget = new CPPFunctionType(returnType, parameterTypes);
 			ft= new CPPFunctionType(conversionTarget, IType.EMPTY_TYPE_ARRAY, true, false, false, false, false);
-            // Calling CPPASTConversionName.createName(IType) would try to stringize the type to
-            // construct a name, which is unnecessary work (not to mention prone to recursion with
-            // dependent types). Since the name doesn't matter anyways, just make one up.
-            char[] conversionOperatorName = CPPASTConversionName.createName("__fptr");  //$NON-NLS-1$
+			char[] conversionOperatorName = CPPASTConversionName.createName(conversionTarget, null);
 			if (isGeneric()) {
 				ICPPTemplateParameter[] templateParams = getInventedTemplateParameterList();
 				// Clone the template parameters, since they are used by the function call operator,
@@ -238,32 +236,11 @@ public class CPPClosureType extends PlatformObject implements ICPPClassType, ICP
 	}
 	
 	private IType[] getParameterTypes() {
-		if (fParameterTypes == null) {
-			ICPPASTFunctionDeclarator lambdaDtor = fLambdaExpression.getDeclarator();
-			if (lambdaDtor != null) {
-				fParameterTypes = CPPVisitor.createParameterTypes(lambdaDtor);
-			} else {
-				fParameterTypes = IType.EMPTY_TYPE_ARRAY;
-			}
+		ICPPASTFunctionDeclarator lambdaDtor = fLambdaExpression.getDeclarator();
+		if (lambdaDtor != null) {
+			return CPPVisitor.createParameterTypes(lambdaDtor);
 		}
-		return fParameterTypes;
-	}
-	
-	public ICPPParameter[] getParameters() {
-		if (fParameters == null) {
-			final IType[] parameterTypes= getParameterTypes();
-			fParameters = new ICPPParameter[parameterTypes.length];
-			ICPPASTFunctionDeclarator lambdaDtor = fLambdaExpression.getDeclarator();
-			if (lambdaDtor != null) {
-				ICPPASTParameterDeclaration[] paramDecls = lambdaDtor.getParameters();
-				for (int i = 0; i < fParameters.length; i++) {
-					CPPParameter param = new CPPParameter(parameterTypes[i], i);
-					param.addDeclaration(paramDecls[i].getDeclarator().getName());
-					fParameters[i] = param;
-				}
-			}
-		}
-		return fParameters;
+		return IType.EMPTY_TYPE_ARRAY;
 	}
 
 	@Override
@@ -450,12 +427,6 @@ public class CPPClosureType extends PlatformObject implements ICPPClassType, ICP
 		}
 		throw new IllegalArgumentException(member.getName() + " is not a member of closure type '" //$NON-NLS-1$
 				+ fLambdaExpression.getRawSignature() + "'"); //$NON-NLS-1$
-	}
-	
-	// A lambda expression can appear in a dependent context, such as in the value of
-	// a variable template, so it needs to be instantiable.
-	public CPPClosureType instantiate(InstantiationContext context) {
-		return new CPPClosureSpecialization(fLambdaExpression, this, context);
 	}
 
 	private final class ClassScope implements ICPPClassScope {

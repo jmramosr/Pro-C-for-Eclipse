@@ -283,7 +283,6 @@ class ASTPragmaOperator extends ASTPragma {
 }
 
 
-
 class ASTMacroDefinition extends ASTPreprocessorNode implements IASTPreprocessorObjectStyleMacroDefinition {
 	private final ASTPreprocessorName fName;
 	protected final int fExpansionNumber;

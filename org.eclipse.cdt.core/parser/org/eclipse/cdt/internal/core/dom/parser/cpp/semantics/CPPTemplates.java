@@ -26,7 +26,6 @@ import static org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.SemanticUti
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.cdt.core.CCorePlugin;
@@ -46,7 +45,6 @@ import org.eclipse.cdt.core.dom.ast.IASTName;
 import org.eclipse.cdt.core.dom.ast.IASTNameOwner;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
 import org.eclipse.cdt.core.dom.ast.IASTSimpleDeclaration;
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit;
 import org.eclipse.cdt.core.dom.ast.IASTTypeId;
 import org.eclipse.cdt.core.dom.ast.IArrayType;
 import org.eclipse.cdt.core.dom.ast.IBinding;
@@ -82,7 +80,6 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTTemplateSpecialization;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTTemplatedTypeTemplateParameter;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPAliasTemplate;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPAliasTemplateInstance;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPBasicType;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPClassScope;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPClassSpecialization;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPClassTemplate;
@@ -136,7 +133,6 @@ import org.eclipse.cdt.internal.core.dom.parser.ProblemBinding;
 import org.eclipse.cdt.internal.core.dom.parser.ProblemFunctionType;
 import org.eclipse.cdt.internal.core.dom.parser.ProblemType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTName;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTTranslationUnit;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPAliasTemplateInstance;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPAliasTemplateSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPArrayType;
@@ -146,7 +142,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassSpecialization.Recur
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassTemplatePartialSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassTemplatePartialSpecializationSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassTemplateSpecialization;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPConstructorInstance;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPConstructorSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPConstructorTemplateSpecialization;
@@ -167,7 +162,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethodSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethodTemplateSpecialization;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPParameterPackType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPParameterSpecialization;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPPlaceholderType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPPointerToMemberType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPPointerType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPTemplateDefinition;
@@ -226,7 +220,7 @@ public class CPPTemplates {
 
 	// Used to indicate that two different packs with different sizes were found.
 	static final int PACK_SIZE_FAIL = -2;
-	
+
 	// Used to indicate that no template parameter packs were found.
 	static final int PACK_SIZE_NOT_FOUND = Integer.MAX_VALUE;
 
@@ -982,16 +976,6 @@ public class CPPTemplates {
 		return newVariable;
 	}
 
-	/**
-	 * IMPORTANT: Do NOT call this method directly, at least when (owner instanceof ICPPClassSpecialization).
-	 *            Use ICPPClassSpecialization.specializeMember(decl) instead.
-	 *            
-	 *            This ensures that the caching mechanism for member specializations implemented by
-	 *            ICPPClassSpecialization.specializeMember() is not bypassed.
-	 *            
-	 * TODO: Implement a caching mechanism for non-class owners, too, and make specializeMember()
-	 *       a method of ICPPSpecialization itself.
-	 */
 	public static IBinding createSpecialization(ICPPSpecialization owner, IBinding decl) {
 		IBinding spec = null;
 		final ICPPTemplateParameterMap tpMap= owner.getTemplateParameterMap();
@@ -1238,6 +1222,14 @@ public class CPPTemplates {
 		if (tpar.isParameterPack()) {
 			ICPPTemplateArgument[] args= tpMap.getPackExpansion(tpar);
 			if (args != null) {
+				// The arguments could be dependent, so they could themselves
+				// contain pack expansions.
+				for (ICPPTemplateArgument arg : args) {
+					if (arg.isPackExpansion()) {
+						return PACK_SIZE_DEFER;
+					}
+				}
+				
 				return args.length;
 			}
 			return PACK_SIZE_DEFER;
@@ -1610,34 +1602,21 @@ public class CPPTemplates {
 			// to the target type but can SFINAE out during instantiation, so it's not
 			// sufficient to handle it in the ITypeContainer case.
 			if (type instanceof ICPPAliasTemplateInstance) {
-				// Cache instantiations of alias templates. This is necessary because below we can
-				// potentially instantiate types that appear in the arguments of an alias template
-				// instance up to three times (once in instantiateArguments(), once in
-				// instantiateArgumentMap(), and if the argument appears in the aliased type, then
-				// a third time in instantiateType()), leading to exponential runtime in cases of
-				// nested alias template instances (which can be common in metaprogramming code
-				// implemented using alias templates). 
-				IType result = getCachedInstantiation(instantiationRequest);
-				if (result != null) {
-					return result;
-				}
 				ICPPAliasTemplateInstance instance = (ICPPAliasTemplateInstance) type;
 				ICPPAliasTemplate template = instance.getTemplateDefinition();
 				ICPPTemplateArgument[] args = instance.getTemplateArguments();
 				ICPPTemplateArgument[] newArgs = instantiateArguments(args, context, true);
 				if (newArgs == null) {
-					result = (IType) createProblem(template, 
+					return (IType) createProblem(template, 
 							IProblemBinding.SEMANTIC_INVALID_TEMPLATE_ARGUMENTS);
-				} else if (args != newArgs) {
+				}
+				if (args != newArgs) {
 					IType target = instantiateType(instance.getType(), context);
 					CPPTemplateParameterMap map = 
 							instantiateArgumentMap(instance.getTemplateParameterMap(), context);
-					result = new CPPAliasTemplateInstance(template, target, instance.getOwner(), map, newArgs);
-				} else {
-					result = type;
+					return new CPPAliasTemplateInstance(template, target, instance.getOwner(), map, newArgs);
 				}
-				putCachedInstantiation(instantiationRequest, result);
-				return result;
+				return type;
 			}
 
 			if (type instanceof ITypeContainer) {
@@ -1682,10 +1661,6 @@ public class CPPTemplates {
 					case underlying_type: return TypeTraits.underlyingType(operand);
 					default:              return null;  // shouldn't happen
 				}
-			}
-			
-			if (type instanceof CPPClosureType) {
-				return ((CPPClosureType) type).instantiate(context);
 			}
 
 			return type;
@@ -2205,8 +2180,6 @@ public class CPPTemplates {
 			IASTDeclarator declarator = ((IASTFunctionDefinition) nestedDecl).getDeclarator();
 			declarator= ASTQueries.findInnermostDeclarator(declarator);
 			name = declarator.getName();
-		} else if (nestedDecl instanceof ICPPASTAliasDeclaration) {
-			name = ((ICPPASTAliasDeclaration) nestedDecl).getAlias();
 		}
 		if (name != null) {
 			if (name instanceof ICPPASTQualifiedName) {
@@ -2853,9 +2826,6 @@ public class CPPTemplates {
 			final IType paramType, ICPPTemplateArgument arg) throws DOMException {
 		// 14.1s8 function to pointer and array to pointer conversions.
 		IType a= arg.getTypeOfNonTypeValue();
-		if (a instanceof ICPPParameterPackType) {
-			a = ((ICPPParameterPackType) a).getType();
-		}
 		IType p;
 		if (paramType instanceof IFunctionType) {
 			p = new CPPPointerType(paramType);
@@ -2882,15 +2852,6 @@ public class CPPTemplates {
 			}
 			return null;
 		}
-
-		if (paramType instanceof TypeOfDependentExpression) {
-			// Partial support for C++17 template <auto>
-			TypeOfDependentExpression type = (TypeOfDependentExpression) paramType;
-			if (type.isForTemplateAuto()) {
-				return arg;
-			}
-		}
-
 		Cost cost = Conversions.checkImplicitConversionSequence(p, a, LVALUE, UDCMode.FORBIDDEN,
 				Context.ORDINARY);
 		if (cost == null || !cost.converts()) {
@@ -2999,12 +2960,6 @@ public class CPPTemplates {
 				return ((InitializerListType) t).getEvaluation().isTypeDependent();
 			} else if (t instanceof IBinding) {
 				IBinding owner = ((IBinding) t).getOwner();
-				if (owner instanceof IFunction) {
-					if (owner instanceof ICPPFunctionTemplate) {
-						return true;
-					}
-					owner = owner.getOwner();
-				}
 				if (owner instanceof ICPPClassTemplate)
 					return true;
 				return (owner instanceof IType) && owner != t && isDependentType((IType) owner);
@@ -3279,17 +3234,6 @@ public class CPPTemplates {
 		}
 		return exec;
 	}
-
-	/**
-	 * If 'name' is a destructor-name, return the name of the type (i.e. the
-	 * portion following the '~'). Otherwise return null.
-	 */
-	public static String unwrapDestructorName(char[] name) {
-		if (name == null || name.length == 0 || name[0] != '~') {
-			return null;
-		}
-		return new String(name).substring(1).trim();
-	}
 	
 	/**
 	 * Instantiate a plain name (simple-id).
@@ -3307,10 +3251,10 @@ public class CPPTemplates {
 	 *         instantiation context's parameter map, the provided name is returned unchanged. 
 	 */
 	public static char[] instantiateName(char[] name, InstantiationContext context, IBinding enclosingTemplate) {
-		String typename = unwrapDestructorName(name);
-		if (typename == null) {  // not a destructor-name
+		if (name == null || name.length == 0 || name[0] != '~') {
 			return name;
 		}
+		String typename = new String(name).substring(1);
 		ICPPTemplateParameterMap map = context.getParameterMap();
 		IBinding enclosing = enclosingTemplate;
 		while (enclosing != null) {
@@ -3323,16 +3267,9 @@ public class CPPTemplates {
 								IType argType = arg.getTypeValue();
 								argType = SemanticUtil.getNestedType(argType, CVTYPE | TDEF);
 								if (argType instanceof ICPPClassType) {
-									// Destructor for class type.
 									StringBuilder result = new StringBuilder();
 									result.append('~');
 									result.append(((ICPPClassType) argType).getName());
-									return result.toString().toCharArray();
-								} else if (argType instanceof ICPPBasicType) {
-									// Pseudo-destructor for builtin type.
-									StringBuilder result = new StringBuilder();
-									result.append('~');
-									ASTTypeUtil.appendType(argType, true, result);
 									return result.toString().toCharArray();
 								}
 							}
@@ -3360,28 +3297,5 @@ public class CPPTemplates {
 			}
 		}
 		return true;
-	}
-
-	private static Map<TypeInstantiationRequest, IType> getInstantiationCache() {
-		IASTNode lookupPoint = CPPSemantics.getCurrentLookupPoint();
-		if (lookupPoint != null) {
-			IASTTranslationUnit tu = lookupPoint.getTranslationUnit();
-			if (tu instanceof CPPASTTranslationUnit) {
-				return ((CPPASTTranslationUnit) tu).getInstantiationCache();
-			}
-		}
-		return null;
-	}
-	
-	private static IType getCachedInstantiation(TypeInstantiationRequest instantiationRequest) {
-		Map<TypeInstantiationRequest, IType> cache = getInstantiationCache();
-		return cache != null ? cache.get(instantiationRequest) : null;
-	}
-	
-	private static void putCachedInstantiation(TypeInstantiationRequest instantiationRequest, IType result) {
-		Map<TypeInstantiationRequest, IType> cache = getInstantiationCache();
-		if (cache != null) {
-			cache.put(instantiationRequest, result);
-		}
 	}
 }

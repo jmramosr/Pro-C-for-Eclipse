@@ -98,12 +98,6 @@ public abstract class GNUScannerExtensionConfiguration extends AbstractScannerEx
     	return false;
     }
     
-
-	@Override
-	public boolean supportDigitSeparators() {
-		return false;
-	}
-
 	/**
 	 * @deprecated simply derive from this class and use {@link #addMacro(String, String)} to
 	 * add additional macros.

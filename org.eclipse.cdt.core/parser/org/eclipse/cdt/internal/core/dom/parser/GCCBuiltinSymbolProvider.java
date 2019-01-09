@@ -128,10 +128,10 @@ public class GCCBuiltinSymbolProvider implements IBuiltinBindingsProvider {
 		function("void*", 		"__builtin_frame_address",  "unsigned int");
 
 		// __sync Builtins (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fsync-Builtins.html)
-		String[] types= {"int", "long", "long long", "unsigned int", "unsigned long", "unsigned long long", "void*"};
+		String[] types= {"int", "long", "long long", "unsigned int", "unsigned long", "unsigned long long"};
 		for (String type : types) {
 			// Manual does not mention volatile, however functions can be used for ptr to volatile
-			String typePtr= type + " volatile *";
+			String typePtr= "volatile " + type + "*";
 			function(type, 	"__sync_fetch_and_add", typePtr, type, "...");
 			function(type, 	"__sync_fetch_and_sub", typePtr, type, "...");
 			function(type, 	"__sync_fetch_and_or", typePtr, type, "...");
@@ -154,7 +154,7 @@ public class GCCBuiltinSymbolProvider implements IBuiltinBindingsProvider {
 		// __atomic Builtins (https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html)
 		for (String type : types) {
 			// Manual does not mention volatile, however functions can be used for ptr to volatile
-			String typePtr= type + " volatile *";
+			String typePtr= "volatile " + type + "*";
 			function(type, 		"__atomic_load_n", typePtr, "int");
 			function("void", 	"__atomic_load", typePtr, typePtr, "int");
 			function("void", 	"__atomic_store_n", typePtr, type, "int");
@@ -451,12 +451,6 @@ public class GCCBuiltinSymbolProvider implements IBuiltinBindingsProvider {
 		function("int", 		"__builtin_vsnprintf", "char*", "size_t", "const char*", "va_list");
 		function("int", 		"__builtin_vsprintf", "char*", "const char*", "va_list");
 		function("int", 		"__builtin_vsscanf", "const char*", "const char*", "va_list");
-		
-		// Object size checking (https://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html) [incomplete]
-		function("size_t",      "__builtin_object_size", "const void*", "int");
-		
-		// x86 built-in functions (https://gcc.gnu.org/onlinedocs/gcc/x86-Built-in-Functions.html) [incomplete]
-		function("double",      "__builtin_ia32_shufpd", "double", "double", "int");
     }
 
 	private void variable(String type, String name) {
@@ -544,17 +538,9 @@ public class GCCBuiltinSymbolProvider implements IBuiltinBindingsProvider {
 			isConst= true;
 			tstr= tstr.substring(6);
 		}
-		if (tstr.endsWith("const")) {
-			isConst= true;
-			tstr= tstr.substring(0, tstr.length() - 5).trim();
-		}
 		if (tstr.startsWith("volatile ")) {
 			isVolatile= true;
 			tstr= tstr.substring(9);
-		}
-		if (tstr.endsWith("volatile")) {
-			isVolatile= true;
-			tstr= tstr.substring(0, tstr.length() - 8).trim();
 		}
 		int q= 0;
 		if (tstr.startsWith("signed ")) {
@@ -609,11 +595,6 @@ public class GCCBuiltinSymbolProvider implements IBuiltinBindingsProvider {
 					new CPointerType(new CFunctionType(rt, IType.EMPTY_TYPE_ARRAY), 0);
 		} else if (tstr.equals("size_t")) {
 			t= toType("unsigned long");
-		} else if (tstr.equals("void*")) {
-			// This can occur inside a qualifier type in which case it's not handled
-			// by the general '*' check above.
-			t= fCpp ? new CPPPointerType(new CPPBasicType(Kind.eVoid, q))
-					: new CPointerType(new CBasicType(Kind.eVoid, q), 0);
 		} else {
 			throw new IllegalArgumentException(type);
 		}

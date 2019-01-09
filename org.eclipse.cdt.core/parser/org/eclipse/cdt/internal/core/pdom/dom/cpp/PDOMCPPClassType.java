@@ -110,8 +110,7 @@ class PDOMCPPClassType extends PDOMCPPBinding implements IPDOMCPPClassType, IPDO
 		getDB().putByte(record + FINAL, (byte) (ct.isFinal() ? 1 : 0));
 	}
 	
-	@Override
-	public void setVisibleToAdlOnly(boolean visibleToAdlOnly) throws CoreException {
+	private void setVisibleToAdlOnly(boolean visibleToAdlOnly) throws CoreException {
 		getDB().putByte(record + VISIBLE_TO_ADL_ONLY, (byte) (visibleToAdlOnly ? 1 : 0));
 	}
 

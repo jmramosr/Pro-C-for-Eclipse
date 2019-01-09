@@ -104,7 +104,6 @@ import org.eclipse.cdt.core.dom.ast.IType;
 import org.eclipse.cdt.core.dom.ast.ITypedef;
 import org.eclipse.cdt.core.dom.ast.IVariable;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTAliasDeclaration;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCapture;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCatchHandler;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier.ICPPASTBaseSpecifier;
@@ -122,7 +121,6 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTForStatement;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDeclarator;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTIfStatement;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitCapture;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitializerClause;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitializerList;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression;
@@ -246,7 +244,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPTemplates.TypeS
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.Conversions.Context;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.Conversions.UDCMode;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.Cost.Rank;
-import org.eclipse.cdt.internal.core.pdom.dom.IPDOMAdaptedASTNode;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 
@@ -1584,18 +1581,9 @@ public class CPPSemantics {
 				ICPPASTFunctionDeclarator dtor = (ICPPASTFunctionDeclarator) ((IASTFunctionDefinition) p).getDeclarator();
 				nodes = dtor.getParameters();
 			} else if (p instanceof ICPPASTLambdaExpression) {
-				ICPPASTLambdaExpression lambdaExpression = (ICPPASTLambdaExpression) p;
-				for (ICPPASTCapture capture : lambdaExpression.getCaptures()) {
-					if (capture instanceof ICPPASTInitCapture) {
-						IASTName name = capture.getIdentifier();
-						if (name != null) {
-							ASTInternal.addName(scope, name);
-						}
-					}
-				}
-				ICPPASTFunctionDeclarator lambdaDeclarator = lambdaExpression.getDeclarator();
-				if (lambdaDeclarator != null) {
-					nodes = lambdaDeclarator.getParameters();
+				ICPPASTFunctionDeclarator dtor = ((ICPPASTLambdaExpression) p).getDeclarator();
+				if (dtor != null) {
+					nodes = dtor.getParameters();
 				}
 			}
 			if (p instanceof ICPPASTCatchHandler) {
@@ -1634,23 +1622,9 @@ public class CPPSemantics {
 				nodes= new IASTNode[] {initDeclaration};
 			}
 		} else if (parent instanceof ICPPASTSwitchStatement) {
-			ICPPASTSwitchStatement ifStatement = (ICPPASTSwitchStatement) parent;
-			final IASTStatement initStatement = ifStatement.getInitializerStatement();
-			final IASTDeclaration controllerDeclaration = ifStatement.getControllerDeclaration();
-			if (initStatement != null) {
-				nodes = new IASTNode[] {initStatement, controllerDeclaration};
-			} else {
-				nodes = new IASTNode[] {controllerDeclaration};
-			}
+			nodes = new IASTNode[] { ((ICPPASTSwitchStatement) parent).getControllerDeclaration() };
 		} else if (parent instanceof ICPPASTIfStatement) {
-			ICPPASTIfStatement ifStatement = (ICPPASTIfStatement) parent;
-			final IASTStatement initStatement = ifStatement.getInitializerStatement();
-			final IASTDeclaration conditionDeclaration = ifStatement.getConditionDeclaration();
-			if (initStatement != null) {
-				nodes = new IASTNode[] {initStatement, conditionDeclaration};
-			} else {
-				nodes = new IASTNode[] {conditionDeclaration};
-			}
+			nodes = new IASTNode[] { ((ICPPASTIfStatement) parent).getConditionDeclaration() };
 		} else if (parent instanceof ICPPASTWhileStatement) {
 			nodes = new IASTNode[] { ((ICPPASTWhileStatement) parent).getConditionDeclaration() };
 		} else if (parent instanceof ICPPASTRangeBasedForStatement) {
@@ -2040,11 +2014,7 @@ public class CPPSemantics {
 	}
 
 	public static boolean declaredBefore(Object obj, IASTNode node, boolean indexBased) {
-		if (node instanceof IPDOMAdaptedASTNode) {
-			// Get the underlying ASTNode.
-			node = ((IPDOMAdaptedASTNode) node).getDelegate();
-		}
-		if (!(node instanceof ASTNode))
+		if (node == null)
 			return true;
 
 		// The pointOfRef and pointOfDecl variables contain node offsets scaled by a factor of two.
@@ -3332,7 +3302,7 @@ public class CPPSemantics {
 				} else if (kind == IASTLiteralExpression.lk_float_constant) {
 					type = new CPPBasicType(Kind.eDouble, IBasicType.IS_LONG);
 				}
-				return SemanticUtil.getNestedType(func.getParameters()[0].getType(), CVTYPE).isSameType(type);
+				return func.getParameters()[0].getType().isSameType(type);
 			}
 		}
 		return false;

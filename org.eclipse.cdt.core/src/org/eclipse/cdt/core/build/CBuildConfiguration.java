@@ -23,18 +23,16 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.IBinaryParser;
 import org.eclipse.cdt.core.IConsoleParser;
-import org.eclipse.cdt.core.IConsoleParser2;
 import org.eclipse.cdt.core.IMarkerGenerator;
 import org.eclipse.cdt.core.ProblemMarkerInfo;
 import org.eclipse.cdt.core.envvar.IEnvironmentVariable;
@@ -81,7 +79,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.service.prefs.Preferences;
@@ -102,8 +99,7 @@ import com.google.gson.JsonParseException;
  * @since 6.0
  */
 public abstract class CBuildConfiguration extends PlatformObject
-		implements ICBuildConfiguration, ICBuildConfiguration2, IMarkerGenerator, 
-		IConsoleParser2, IElementChangedListener {
+		implements ICBuildConfiguration, IMarkerGenerator, IConsoleParser, IElementChangedListener {
 
 	private static final String LAUNCH_MODE = "cdt.launchMode"; //$NON-NLS-1$
 
@@ -113,8 +109,6 @@ public abstract class CBuildConfiguration extends PlatformObject
 	private final IBuildConfiguration config;
 	private final IToolChain toolChain;
 	private String launchMode;
-	
-	private Object scannerInfoLock = new Object();
 
 	private final Map<IResource, List<IScannerInfoChangeListener>> scannerInfoListeners = new HashMap<>();
 	private ScannerInfoCache scannerInfoCache;
@@ -236,7 +230,6 @@ public abstract class CBuildConfiguration extends PlatformObject
 		return buildFolder;
 	}
 
-	@Override
 	public URI getBuildDirectoryURI() throws CoreException {
 		return getBuildContainer().getLocationURI();
 	}
@@ -475,37 +468,6 @@ public abstract class CBuildConfiguration extends PlatformObject
 		}
 		return null;
 	}
-	
-	/**
-	 * @since 6.5
-	 */
-	public Process startBuildProcess(List<String> commands, IEnvironmentVariable[] envVars, IPath buildDirectory, IConsole console, IProgressMonitor monitor) throws IOException, CoreException {
-		Process process = null;
-		IToolChain tc = getToolChain();
-		if (tc instanceof IToolChain2) {
-			process = ((IToolChain2)tc).startBuildProcess(this, commands, buildDirectory.toString(), envVars, console, monitor);
-		} else {
-			// verify command can be found locally on path
-			Path commandPath = findCommand(commands.get(0));
-			if (commandPath == null) {
-				console.getErrorStream()
-				.write(String.format(Messages.CBuildConfiguration_CommandNotFound, commands.get(0)));
-				return null;
-			}
-			commands.set(0, commandPath.toString());
-
-			ProcessBuilder processBuilder = new ProcessBuilder(commands)
-					.directory(buildDirectory.toFile());
-			// Override environment variables
-			Map<String, String> environment = processBuilder.environment();
-			for (IEnvironmentVariable envVar : envVars) {
-				environment.put(envVar.getName(), envVar.getValue());
-			}
-			setBuildEnvironment(environment);
-			process = processBuilder.start();
-		}
-		return process;
-	}
 
 	@Deprecated
 	protected int watchProcess(Process process, IConsoleParser[] consoleParsers, IConsole console)
@@ -521,20 +483,10 @@ public abstract class CBuildConfiguration extends PlatformObject
 	 * @since 6.4
 	 */
 	protected int watchProcess(Process process, IConsole console) throws CoreException {
-		Thread t1 = new ReaderThread(process.getInputStream(), console.getOutputStream());
-		t1.start();
-		Thread t2 = new ReaderThread(process.getErrorStream(), console.getErrorStream());
-		t2.start();
+		new ReaderThread(process.getInputStream(), console.getOutputStream()).start();
+		new ReaderThread(process.getErrorStream(), console.getErrorStream()).start();
 		try {
-			int rc = process.waitFor();
-			// Allow reader threads the chance to process all output to console
-			while (t1.isAlive()) {
-				Thread.sleep(100);
-			}
-			while (t2.isAlive()) {
-				Thread.sleep(100);
-			}
-			return rc;
+			return process.waitFor();
 		} catch (InterruptedException e) {
 			CCorePlugin.log(e);
 			return -1;
@@ -546,20 +498,10 @@ public abstract class CBuildConfiguration extends PlatformObject
 	 */
 	protected int watchProcess(Process process, IConsoleParser[] consoleParsers)
 			throws CoreException {
-		Thread t1 = new ReaderThread(this, process.getInputStream(), consoleParsers);
-		t1.start();
-		Thread t2 = new ReaderThread(this, process.getErrorStream(), consoleParsers);
-		t2.start();
+		new ReaderThread(process.getInputStream(), consoleParsers).start();
+		new ReaderThread(process.getErrorStream(), consoleParsers).start();
 		try {
-			int rc = process.waitFor();
-			// Allow reader threads the chance to process all output to console
-			while (t1.isAlive()) {
-				Thread.sleep(100);
-			}
-			while (t2.isAlive()) {
-				Thread.sleep(100);
-			}
-			return rc;
+			return process.waitFor();
 		} catch (InterruptedException e) {
 			CCorePlugin.log(e);
 			return -1;
@@ -567,13 +509,11 @@ public abstract class CBuildConfiguration extends PlatformObject
 	}
 
 	private static class ReaderThread extends Thread {
-		CBuildConfiguration config;
 		private final BufferedReader in;
 		private final IConsoleParser[] consoleParsers;
 		private final PrintStream out;
 
-		public ReaderThread(CBuildConfiguration config, InputStream in, IConsoleParser[] consoleParsers) {
-			this.config = config;
+		public ReaderThread(InputStream in, IConsoleParser[] consoleParsers) {
 			this.in = new BufferedReader(new InputStreamReader(in));
 			this.out = null;
 			this.consoleParsers = consoleParsers;
@@ -583,41 +523,23 @@ public abstract class CBuildConfiguration extends PlatformObject
 			this.in = new BufferedReader(new InputStreamReader(in));
 			this.out = new PrintStream(out);
 			this.consoleParsers = null;
-			this.config = null;
 		}
 		
 		@Override
 		public void run() {
-			List<Job> jobList = new ArrayList<>();
 			try {
 				for (String line = in.readLine(); line != null; line = in.readLine()) {
 					if (consoleParsers != null) {
 						for (IConsoleParser consoleParser : consoleParsers) {
 							// Synchronize to avoid interleaving of lines
 							synchronized (consoleParser) {
-								// if we have an IConsoleParser2, use the processLine method that
-								// takes a job list (Container Build support)
-								if (consoleParser instanceof IConsoleParser2) {
-									((IConsoleParser2)consoleParser).processLine(line, jobList);
-								} else {
-									consoleParser.processLine(line);
-								}
+								consoleParser.processLine(line);
 							}
 						}
 					}
 					if (out != null) {
 						out.println(line);
 					}
-				}
-				for (Job j : jobList) {
-					try {
-						j.join();
-					} catch (InterruptedException e) {
-						// ignore
-					}
-				}
-				if (config != null) {
-				  config.shutdown();
 				}
 			} catch (IOException e) {
 				CCorePlugin.log(e);
@@ -690,33 +612,31 @@ public abstract class CBuildConfiguration extends PlatformObject
 	/**
 	 * @since 6.1
 	 */
-	protected void loadScannerInfoCache() {
-		synchronized (scannerInfoLock) {
-			if (scannerInfoCache == null) {
-				File cacheFile = getScannerInfoCacheFile();
-				if (cacheFile.exists()) {
-					try (FileReader reader = new FileReader(cacheFile)) {
-						GsonBuilder gsonBuilder = new GsonBuilder();
-						gsonBuilder.registerTypeAdapter(IExtendedScannerInfo.class,
-								new IExtendedScannerInfoCreator());
-						Gson gson = gsonBuilder.create();
-						scannerInfoCache = gson.fromJson(reader, ScannerInfoCache.class);
-					} catch (IOException e) {
-						CCorePlugin.log(e);
-						scannerInfoCache = new ScannerInfoCache();
-					}
-				} else {
+	protected synchronized void loadScannerInfoCache() {
+		if (scannerInfoCache == null) {
+			File cacheFile = getScannerInfoCacheFile();
+			if (cacheFile.exists()) {
+				try (FileReader reader = new FileReader(cacheFile)) {
+					GsonBuilder gsonBuilder = new GsonBuilder();
+					gsonBuilder.registerTypeAdapter(IExtendedScannerInfo.class,
+							new IExtendedScannerInfoCreator());
+					Gson gson = gsonBuilder.create();
+					scannerInfoCache = gson.fromJson(reader, ScannerInfoCache.class);
+				} catch (IOException e) {
+					CCorePlugin.log(e);
 					scannerInfoCache = new ScannerInfoCache();
 				}
-				scannerInfoCache.initCache();
+			} else {
+				scannerInfoCache = new ScannerInfoCache();
 			}
+			scannerInfoCache.initCache();
 		}
 	}
 
 	/**
 	 * @since 6.1
 	 */
-	protected synchronized void saveScannerInfoCache() {
+	protected void saveScannerInfoCache() {
 		File cacheFile = getScannerInfoCacheFile();
 		if (!cacheFile.getParentFile().exists()) {
 			try {
@@ -729,9 +649,7 @@ public abstract class CBuildConfiguration extends PlatformObject
 
 		try (FileWriter writer = new FileWriter(getScannerInfoCacheFile())) {
 			Gson gson = new Gson();
-			synchronized (scannerInfoLock) {
-				gson.toJson(scannerInfoCache, writer);
-			}
+			gson.toJson(scannerInfoCache, writer);
 		} catch (IOException e) {
 			CCorePlugin.log(e);
 		}
@@ -775,10 +693,7 @@ public abstract class CBuildConfiguration extends PlatformObject
 	@Override
 	public IScannerInfo getScannerInformation(IResource resource) {
 		loadScannerInfoCache();
-		IExtendedScannerInfo info = null;
-		synchronized (scannerInfoLock) {
-			info = scannerInfoCache.getScannerInfo(resource);
-		}
+		IExtendedScannerInfo info = scannerInfoCache.getScannerInfo(resource);
 		if (info == null) {
 			ICElement celement = CCorePlugin.getDefault().getCoreModel().create(resource);
 			if (celement instanceof ITranslationUnit) {
@@ -786,9 +701,7 @@ public abstract class CBuildConfiguration extends PlatformObject
 					ITranslationUnit tu = (ITranslationUnit) celement;
 					info = getToolChain().getDefaultScannerInfo(getBuildConfiguration(),
 							getBaseScannerInfo(resource), tu.getLanguage(), getBuildDirectoryURI());
-					synchronized (scannerInfoLock) {
-						scannerInfoCache.addScannerInfo(DEFAULT_COMMAND, info, resource);
-					}
+					scannerInfoCache.addScannerInfo(DEFAULT_COMMAND, info, resource);
 					saveScannerInfoCache();
 				} catch (CoreException e) {
 					CCorePlugin.log(e.getStatus());
@@ -817,14 +730,12 @@ public abstract class CBuildConfiguration extends PlatformObject
 				IResource resource = delta.getElement().getResource();
 				if (resource.getProject().equals(getProject())) {
 					loadScannerInfoCache();
-					synchronized (scannerInfoLock) {
-						if (scannerInfoCache.hasResource(DEFAULT_COMMAND, resource)) {
-							scannerInfoCache.removeResource(resource);
-						} else {
-							// Clear the whole command and exit the delta
-							scannerInfoCache.removeCommand(DEFAULT_COMMAND);
-							return;
-						}
+					if (scannerInfoCache.hasResource(DEFAULT_COMMAND, resource)) {
+						scannerInfoCache.removeResource(resource);
+					} else {
+						// Clear the whole command and exit the delta
+						scannerInfoCache.removeCommand(DEFAULT_COMMAND);
+						return;
 					}
 				}
 			}
@@ -836,66 +747,13 @@ public abstract class CBuildConfiguration extends PlatformObject
 		}
 	}
 
-	/**
-	 * Parse a string containing compile options into individual argument strings.
-	 * 
-	 * @param argString - String to parse
-	 * @return List of arg Strings
-	 */
-	private List<String> stripArgs(String argString) {
-		Pattern p0 = Pattern.compile("('(.*?)').*"); //$NON-NLS-1$
-		Pattern p1 = Pattern.compile("([\\-](\\w|[\\-])+[=]\\\".*?\\\").*"); //$NON-NLS-1$
-		Pattern p2 = Pattern.compile("([\\-](\\w|[\\-])+[=]'.*?').*"); //$NON-NLS-1$
-		Pattern p3 = Pattern.compile("([\\-](\\w|[\\-])+[=][^\\s]+).*"); //$NON-NLS-1$
-		Pattern p4 = Pattern.compile("([^\\s]+).*"); //$NON-NLS-1$
-		boolean finished = false;
-		List<String> args = new ArrayList<>();
-		while (!finished) {
-			Matcher m0 = p0.matcher(argString);
-			if (m0.matches()) {
-				argString = argString.replaceFirst("'.*?'", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-				String s = m0.group(2).trim(); // strip single quotes
-				args.add(s);
-			} else {
-				Matcher m1 = p1.matcher(argString);
-				if (m1.matches()) {
-					argString = argString.replaceFirst("[\\-](\\w|[\\-])+[=]\\\".*?\\\"","").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-					String s = m1.group(1).trim();
-					args.add(s);
-				} else {
-					Matcher m2 = p2.matcher(argString);
-					if (m2.matches()) {
-						argString = argString.replaceFirst("[\\-](\\w|[\\-])+[=]'.*?'", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-						String s = m2.group(1).trim();
-						args.add(s);
-					} else {
-						Matcher m3 = p3.matcher(argString);
-						if (m3.matches()) {
-							argString = argString.replaceFirst("[\\-](\\w|[\\-])+[=][^\\s]+", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-							args.add(m3.group(1).trim());
-						} else {
-							Matcher m4 = p4.matcher(argString);
-							if (m4.matches()) {
-								argString = argString.replaceFirst("[^\\s]+", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
-								args.add(m4.group(1).trim());
-							} else {
-								finished = true;
-							}
-						}
-					}
-				}
-			}
-		}
-		return args;
-	}
-
 	private boolean infoChanged = false;
 
 	@Override
 	public boolean processLine(String line) {
-		// Split line into args, taking into account quotes
-		List<String> command = stripArgs(line);
-		
+		// TODO smarter line parsing to deal with quoted arguments
+		List<String> command = Arrays.asList(line.split("\\s+")); //$NON-NLS-1$
+
 		// Make sure it's a compile command
 		String[] compileCommands = toolChain.getCompileCommands();
 		boolean found = false;
@@ -914,7 +772,6 @@ public abstract class CBuildConfiguration extends PlatformObject
 					break loop;
 				}
 			}
-
 
 			if (Platform.getOS().equals(Platform.OS_WIN32) && !arg.endsWith(".exe")) { //$NON-NLS-1$
 				// Try with exe
@@ -935,32 +792,24 @@ public abstract class CBuildConfiguration extends PlatformObject
 
 		try {
 			IResource[] resources = toolChain.getResourcesFromCommand(command, getBuildDirectoryURI());
-			if (resources != null && resources.length > 0) {
+			if (resources != null) {
 				List<String> commandStrings = toolChain.stripCommand(command, resources);
 
 				for (IResource resource : resources) {
 					loadScannerInfoCache();
-					boolean hasCommand = true;
-					synchronized (scannerInfoLock) {
-						if (scannerInfoCache.hasCommand(commandStrings)) {
-							if (!scannerInfoCache.hasResource(commandStrings, resource)) {
-								scannerInfoCache.addResource(commandStrings, resource);
-								infoChanged = true;
-							}
-						} else {
-							hasCommand = false;
+					if (scannerInfoCache.hasCommand(commandStrings)) {
+						if (!scannerInfoCache.hasResource(commandStrings, resource)) {
+							scannerInfoCache.addResource(commandStrings, resource);
+							infoChanged = true;
 						}
-					}
-					if (!hasCommand) {
+					} else {
 						Path commandPath = findCommand(command.get(0));
 						if (commandPath != null) {
 							command.set(0, commandPath.toString());
 							IExtendedScannerInfo info = getToolChain().getScannerInfo(getBuildConfiguration(),
 									command, null, resource, getBuildDirectoryURI());
-							synchronized (scannerInfoLock) {
-								scannerInfoCache.addScannerInfo(commandStrings, info, resource);
-								infoChanged = true;
-							}
+							scannerInfoCache.addScannerInfo(commandStrings, info, resource);
+							infoChanged = true;
 						}
 					}
 				}
@@ -972,146 +821,6 @@ public abstract class CBuildConfiguration extends PlatformObject
 			CCorePlugin.log(e);
 			return false;
 		}
-	}
-
-	private class ScannerInfoJob extends Job {
-		private IToolChain toolchain;
-		private List<String> command;
-		private List<String> commandStrings;
-		private IResource resource;
-		private URI buildDirectoryURI;
-		
-		public ScannerInfoJob(String msg, IToolChain toolchain, List<String> command, IResource resource,
-				URI buildDirectoryURI, List<String> commandStrings) {
-			super(msg);
-			this.toolchain = toolchain;
-			this.command = command;
-			this.commandStrings = commandStrings;
-			this.resource = resource;
-			this.buildDirectoryURI = buildDirectoryURI;
-		}
-		
-		@Override
-		protected IStatus run(IProgressMonitor monitor) {
-			IExtendedScannerInfo info = toolchain.getScannerInfo(getBuildConfiguration(),
-					command, null, resource, buildDirectoryURI);
-			synchronized (scannerInfoLock) {
-				scannerInfoCache.addScannerInfo(commandStrings, info, resource);
-				infoChanged = true;
-			}
-			return Status.OK_STATUS;
-		}
-	}
-	
-	/**
-	 * Process a compile line for Scanner info in a separate job
-	 * 
-	 * @param line - line to process
-	 * @param jobsArray - array of Jobs to keep track of open scanner info jobs
-	 * @return - true if line processed, false otherwise
-	 * 
-	 * @since 6.5
-	 */
-	@Override
-	public boolean processLine(String line, List<Job> jobsArray) {
-		// Split line into args, taking into account quotes
-		List<String> command = stripArgs(line);
-		
-		// Make sure it's a compile command
-		String[] compileCommands = toolChain.getCompileCommands();
-		boolean found = false;
-		loop:
-		for (String arg : command) {
-			// TODO we should really ask the toolchain, not all args start with '-'
-			if (arg.startsWith("-")) { //$NON-NLS-1$
-				// option found, missed our command
-				return false;
-			}
-
-			for (String cc : compileCommands) {
-				if (arg.endsWith(cc)
-						&& (arg.equals(cc) || arg.endsWith("/" + cc) || arg.endsWith("\\" + cc))) { //$NON-NLS-1$ //$NON-NLS-2$
-					found = true;
-					break loop;
-				}
-			}
-
-
-			if (Platform.getOS().equals(Platform.OS_WIN32) && !arg.endsWith(".exe")) { //$NON-NLS-1$
-				// Try with exe
-				arg = arg + ".exe"; //$NON-NLS-1$
-				for (String cc : compileCommands) {
-					if (arg.endsWith(cc)
-							&& (arg.equals(cc) || arg.endsWith("/" + cc) || arg.endsWith("\\" + cc))) { //$NON-NLS-1$ //$NON-NLS-2$
-						found = true;
-						break loop;
-					}
-				}
-			}
-		}
-
-		if (!found) {
-			return false;
-		}
-
-		try {
-			IResource[] resources = toolChain.getResourcesFromCommand(command, getBuildDirectoryURI());
-			if (resources != null && resources.length > 0) {
-				List<String> commandStrings = toolChain.stripCommand(command, resources);
-
-				for (IResource resource : resources) {
-					loadScannerInfoCache();
-					boolean hasCommand = true;
-					synchronized (scannerInfoLock) {
-						if (scannerInfoCache.hasCommand(commandStrings)) {
-							if (!scannerInfoCache.hasResource(commandStrings, resource)) {
-								scannerInfoCache.addResource(commandStrings, resource);
-								infoChanged = true;
-							}
-						} else {
-							hasCommand = false;
-						}
-					}
-					if (!hasCommand) {
-						Path commandPath = findCommand(command.get(0));
-						if (commandPath != null) {
-							command.set(0, commandPath.toString());
-							Job job = new ScannerInfoJob(String.format(Messages.CBuildConfiguration_RunningScannerInfo, resource), 
-									getToolChain(), command, resource, getBuildDirectoryURI(), commandStrings);
-							job.schedule();
-							jobsArray.add(job);
-						}
-					}
-				}
-				return true;
-			} else {
-				return false;
-			}
-		} catch (CoreException e) {
-			CCorePlugin.log(e);
-			return false;
-		}
-	}
-
-	/**
-	 * @since 6.5
-	 */
-	@Override
-	public void setActive() {
-		try {
-			refreshScannerInfo();
-		} catch (CoreException e) {
-			// do nothing
-		}
-	}
-	
-	/**
-	 * @since 6.5
-	 * @throws CoreException
-	 */
-	protected void refreshScannerInfo() throws CoreException {
-		CCorePlugin.getIndexManager().reindex(CoreModel.getDefault().create(getProject()));
-		infoChanged = false;
 	}
 
 	@Override

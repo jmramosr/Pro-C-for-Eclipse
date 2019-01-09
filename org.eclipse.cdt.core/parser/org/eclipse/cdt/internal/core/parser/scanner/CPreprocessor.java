@@ -265,7 +265,7 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
     // configuration
     final private LexerOptions fLexOptions= new LexerOptions();
     final private char[] fAdditionalNumericLiteralSuffixes;
-    protected final CharArrayIntMap fKeywords;
+    final protected CharArrayIntMap fKeywords;
     final private CharArrayIntMap fPPKeywords;
     private final IncludeSearchPath fIncludeSearchPath;
     private String[][] fPreIncludedFiles= null;
@@ -277,7 +277,7 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
     // State information
     private final CharArrayMap<PreprocessorMacro> fMacroDictionary = new CharArrayMap<>(512);
 	private final IMacroDictionary fMacroDictionaryFacade = new MacroDictionary();
-    protected final LocationMap fLocationMap;
+	protected final LocationMap fLocationMap;
 	private CharArraySet fPreventInclusion;
 	private CharArraySet fImports;
 
@@ -290,8 +290,8 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
 	private Token fPrefetchedTokens;
     private Token fLastToken;
 
-	private InternalFileContent fRootContent;
-	protected boolean fHandledEndOfTranslationUnit;
+    protected InternalFileContent fRootContent;
+    protected boolean fHandledEndOfTranslationUnit;
 
 	// Detection of include guards used around an include directive
 	private char[] fExternIncludeGuard;
@@ -323,7 +323,6 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
         fLexOptions.fSupportUTFLiterals = configuration.supportUTFLiterals();
         fLexOptions.fSupportRawStringLiterals = configuration.supportRawStringLiterals();
         fLexOptions.fSupportUserDefinedLiterals = configuration.supportUserDefinedLiterals();
-        fLexOptions.fSupportDigitSeparators = configuration.supportDigitSeparators();
         if (info instanceof ExtendedScannerInfo)
         	fLexOptions.fIncludeExportPatterns = ((ExtendedScannerInfo) info).getIncludeExportPatterns();
         fLocationMap= new LocationMap(fLexOptions);
@@ -1071,12 +1070,6 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
             	switch (image[pos]) {
                 case '0': case'1':
                 	continue;
-                case '\'':
-                	if (fLexOptions.fSupportDigitSeparators) {
-                    	continue;
-                	} else {
-                		break loop;
-                	}
                 case 'e': case 'E':
                 case '.':
                 	handleProblem(IProblem.SCANNER_FLOAT_WITH_BAD_PREFIX, "0b".toCharArray(), number.getOffset(), number.getEndOffset()); //$NON-NLS-1$
@@ -1114,14 +1107,6 @@ public class CPreprocessor implements ILexerLog, IScanner, IAdaptable {
                 }
                 hasDot= true;
                 continue;
-
-            // C++14 literal separator
-            case '\'':
-            	if (fLexOptions.fSupportDigitSeparators) {
-                    continue;
-            	} else {
-            		break loop;
-            	}
 
             // check for exponent or hex digit
             case 'E': case 'e':

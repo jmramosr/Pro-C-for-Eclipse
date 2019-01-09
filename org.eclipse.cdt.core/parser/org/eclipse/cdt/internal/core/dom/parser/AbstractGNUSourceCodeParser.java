@@ -1631,32 +1631,19 @@ public abstract class AbstractGNUSourceCodeParser implements ISourceCodeParser {
 
     protected abstract IASTDeclaration declaration(DeclarationOptions option) throws BacktrackException, EndOfFileException;
 
-    protected Decl declSpecifierSeq(DeclarationOptions option) throws BacktrackException, EndOfFileException {
-    	return declSpecifierSeq(option, null);
-    }
-    
     /**
      * Parses for two alternatives of a declspec sequence. If there is a second alternative the token after the second alternative
      * is returned, such that the parser can continue after both variants.
      */
-    protected abstract Decl declSpecifierSeq(DeclarationOptions option, ITemplateIdStrategy strat) 
-    		throws BacktrackException, EndOfFileException;
+    protected abstract Decl declSpecifierSeq(DeclarationOptions option) throws BacktrackException, EndOfFileException;
 
-    protected Decl declSpecifierSequence_initDeclarator(final DeclarationOptions option, 
-    		boolean acceptCompoundWithoutDtor) 
-			throws EndOfFileException, FoundAggregateInitializer, BacktrackException {
-    	return declSpecifierSequence_initDeclarator(option, acceptCompoundWithoutDtor, null);
-    }
-    
     /**
      * Parses for two alternatives of a declspec sequence followed by a initDeclarator.
      * A second alternative is accepted only, if it ends at the same point of the first alternative. Otherwise the
      * longer alternative is selected.
      */
-    protected Decl declSpecifierSequence_initDeclarator(final DeclarationOptions option, 
-    		boolean acceptCompoundWithoutDtor, ITemplateIdStrategy strat) 
-			throws EndOfFileException, FoundAggregateInitializer, BacktrackException {
-    	Decl result= declSpecifierSeq(option, strat);
+    protected Decl declSpecifierSequence_initDeclarator(final DeclarationOptions option, boolean acceptCompoundWithoutDtor) throws EndOfFileException, FoundAggregateInitializer, BacktrackException {
+    	Decl result= declSpecifierSeq(option);
 
 		final int lt1 = LTcatchEOF(1);
 		if (lt1 == IToken.tEOC)
@@ -2379,13 +2366,13 @@ public abstract class AbstractGNUSourceCodeParser implements ISourceCodeParser {
     protected abstract IASTAmbiguousExpression createAmbiguousBinaryVsCastExpression(IASTBinaryExpression binary, IASTCastExpression castExpr);
     protected abstract IASTAmbiguousExpression createAmbiguousCastVsFunctionCallExpression(IASTCastExpression castExpr, IASTFunctionCallExpression funcCall);
 
-    protected IASTStatement initStatement() throws BacktrackException, EndOfFileException {
+    protected IASTStatement forInitStatement() throws BacktrackException, EndOfFileException {
         if (LT(1) == IToken.tSEMI)
             return parseNullStatement();
         try {
         	return parseDeclarationOrExpressionStatement();
         } catch (BacktrackException e) {
-        	// A init statement always terminates with a semicolon
+        	// Missing semicolon within for loop does not make a complete for-statement
         	IASTNode before = e.getNodeBeforeProblem();
         	if (before != null) {
         		e.initialize(e.getProblem());
@@ -2488,22 +2475,16 @@ public abstract class AbstractGNUSourceCodeParser implements ISourceCodeParser {
 		}
 	}
 
-	protected boolean isIdentifierOrKeyword(IToken token) {
-		char[] image = token.getCharImage();
-		if (image.length == 0) {
-			return false;
-		}
-		char firstChar = image[0];
-		return Character.isLetter(firstChar) || firstChar == '_';
-	}
-
 	protected IToken identifierOrKeyword() throws EndOfFileException, BacktrackException {
-		IToken token = LA(1);
-		if (!isIdentifierOrKeyword(token)) {
+		IToken t = LA(1);
+		char[] image= t.getCharImage();
+		if (image.length == 0)
 			throw backtrack;
-		}
+		char firstChar= image[0];
+		if (!Character.isLetter(firstChar) && firstChar != '_')
+			throw backtrack;
 		consume();
-		return token;
+		return t;
 	}
 
 	/**

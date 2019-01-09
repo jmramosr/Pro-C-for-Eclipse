@@ -90,7 +90,6 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDeclarator;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionWithTryBlock;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTIfStatement;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitCapture;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitializerClause;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTInitializerList;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression;
@@ -260,11 +259,6 @@ public class CPPNodeFactory extends NodeFactory implements ICPPNodeFactory {
 	@Override
 	public ICPPASTCapture newCapture() {
 		return new CPPASTCapture();
-	}
-
-	@Override
-	public ICPPASTInitCapture newInitCapture(ICPPASTDeclarator declarator) {
-		return new CPPASTInitCapture(declarator);
 	}
 
 	@Override
@@ -556,11 +550,6 @@ public class CPPNodeFactory extends NodeFactory implements ICPPNodeFactory {
 	}
 
 	@Override
-	public ICPPASTLiteralExpression newLiteralExpression(int kind, String rep, char[] numericCompilerSuffixes) {
-		return new CPPASTLiteralExpression(kind, rep.toCharArray(), numericCompilerSuffixes);
-	}
-
-	@Override
 	public ICPPASTName newName() {
 		return new CPPASTName();
 	}
@@ -734,11 +723,6 @@ public class CPPNodeFactory extends NodeFactory implements ICPPNodeFactory {
 	public ICPPASTStaticAssertDeclaration newStaticAssertion(IASTExpression condition,
 			ICPPASTLiteralExpression message) {
 		return new CPPASTStaticAssertionDeclaration(condition, message);
-	}
-
-	@Override
-	public ICPPASTStaticAssertDeclaration newStaticAssertion(IASTExpression condition) {
-		return newStaticAssertion(condition, null);
 	}
 
 	@Override

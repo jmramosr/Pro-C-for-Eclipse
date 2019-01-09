@@ -22,7 +22,6 @@ import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.dom.ast.DOMException;
 import org.eclipse.cdt.core.dom.ast.IASTCompositeTypeSpecifier;
 import org.eclipse.cdt.core.dom.ast.IASTDeclSpecifier;
-import org.eclipse.cdt.core.dom.ast.IASTFileLocation;
 import org.eclipse.cdt.core.dom.ast.IASTFunctionDefinition;
 import org.eclipse.cdt.core.dom.ast.IASTName;
 import org.eclipse.cdt.core.dom.ast.IASTNode;
@@ -132,7 +131,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionSet;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalID;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalInitList;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalNaryTypeId;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalPackExpansion;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalPointer;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalReference;
@@ -635,26 +633,6 @@ class PDOMCPPLinkage extends PDOMLinkage implements IIndexCPPBindingConstants {
 					addImplicitMethods(pdomBinding, (ICPPClassType) binding);
 				}
 			}
-			
-			// If we have a non-friend declaration of a class type, mark the class type
-			// as being fully visible (not just visible to ADL only). This is important
-			// in case the first declaration of the class type was a friend declaration,
-			// in which case it was initially marked as visible to ADL only.
-			if (pdomBinding instanceof IPDOMCPPClassType && (name.isDeclaration() || name.isDefinition())) {
-				boolean declaresFriend = false;
-				IASTNode parent = name.getParent();
-				if (parent instanceof ICPPASTQualifiedName) {
-					parent = parent.getParent();
-				}
-				if (parent instanceof ICPPASTElaboratedTypeSpecifier) {
-					if (((ICPPASTElaboratedTypeSpecifier) parent).isFriend()) {
-						declaresFriend = true;
-					}
-				}
-				if (!declaresFriend) {
-					((IPDOMCPPClassType) pdomBinding).setVisibleToAdlOnly(false);
-				}
-			}
 	
 			// Some of the nodes created during addImplicitMethods() can
 			// also schedule post-processes, so we need to run through
@@ -1029,7 +1007,7 @@ class PDOMCPPLinkage extends PDOMLinkage implements IIndexCPPBindingConstants {
 							pdomBinding = createBinding(type, method, fileLocalRec);
 						} else if (!getPDOM().hasLastingDefinition(pdomBinding)) {
 							pdomBinding.update(this, method);
-							old.remove((ICPPMethod) pdomBinding);
+							old.remove(pdomBinding);
 
 							// Update the tags based on the tags from the new binding.  This was in
 							// PDOMBinding.update, but not all subclasses (e.g., PDOMCPPFunction)
@@ -1455,12 +1433,9 @@ class PDOMCPPLinkage extends PDOMLinkage implements IIndexCPPBindingConstants {
 			}
 			if (doit) {
 				long rec= file.getLastUsingDirectiveRec();
-				IASTFileLocation fileLoc = pdomName.getFileLocation();
-				if (fileLoc != null) {
-					PDOMCPPUsingDirective ud= new PDOMCPPUsingDirective(this, rec, containerNS,
-							pdomName.getBinding(), fileLoc.getNodeOffset());
-					file.setLastUsingDirective(ud.getRecord());
-				}
+				PDOMCPPUsingDirective ud= new PDOMCPPUsingDirective(this, rec, containerNS,
+						pdomName.getBinding(), pdomName.getFileLocation().getNodeOffset());
+				file.setLastUsingDirective(ud.getRecord());
 			}
 		} else if (parentNode instanceof ICPPASTElaboratedTypeSpecifier) {
 			ICPPASTElaboratedTypeSpecifier elaboratedSpecifier = (ICPPASTElaboratedTypeSpecifier) parentNode;
@@ -1723,8 +1698,6 @@ class PDOMCPPLinkage extends PDOMLinkage implements IIndexCPPBindingConstants {
 			return EvalPointer.unmarshal(firstBytes, buffer);
 		case ITypeMarshalBuffer.EVAL_COMPOSITE_ACCESS:
 			return EvalCompositeAccess.unmarshal(firstBytes, buffer);
-		case ITypeMarshalBuffer.EVAL_NARY_TYPE_ID:
-			return EvalNaryTypeId.unmarshal(firstBytes, buffer);
 		}
 		throw new CoreException(CCorePlugin.createStatus("Cannot unmarshal an evaluation, first bytes=" + firstBytes)); //$NON-NLS-1$
 	}

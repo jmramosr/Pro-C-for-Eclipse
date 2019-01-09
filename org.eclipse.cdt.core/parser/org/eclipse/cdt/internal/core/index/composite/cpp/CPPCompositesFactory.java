@@ -91,24 +91,18 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinary;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinaryTypeId;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalComma;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalCompositeAccess;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalCompoundStatementExpression;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalConditional;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalConstructor;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFixed;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionSet;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalID;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalInitList;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalNaryTypeId;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalPackExpansion;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalPointer;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalReference;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalTypeId;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalUnary;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalUnaryTypeID;
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.InitializerListType;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.TypeOfDependentExpression;
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.TypeOfUnknownMember;
 import org.eclipse.cdt.internal.core.index.CIndex;
@@ -271,18 +265,11 @@ public class CPPCompositesFactory extends AbstractCompositeFactory {
 			IType operand = getCompositeType(typeTransformation.getOperand());
 			return new CPPUnaryTypeTransformation(typeTransformation.getOperator(), operand);
 		}
-		if (rtype instanceof InitializerListType) {
-			EvalInitList e = ((InitializerListType) rtype).getEvaluation();
-			EvalInitList e2 = (EvalInitList) getCompositeEvaluation(e);
-			if (e2 != e)
-				return new InitializerListType(e2);
-			return rtype;
-		}
 		if (rtype instanceof IBasicType || rtype == null || rtype instanceof ISemanticProblem) {
 			return rtype;
 		} 
 		
-		throw new CompositingNotImplementedError(rtype.getClass().getName());
+		throw new CompositingNotImplementedError();
 	}
 	
 	public ICPPEvaluation getCompositeEvaluation(ICPPEvaluation eval) {
@@ -352,14 +339,6 @@ public class CPPCompositesFactory extends AbstractCompositeFactory {
 				e= new EvalComma(a2, compositeTemplateDefinition);
 			return e;
 		}
-		if (eval instanceof EvalCompositeAccess) {
-			EvalCompositeAccess e = (EvalCompositeAccess) eval;
-			ICPPEvaluation a = e.getParent();
-			ICPPEvaluation a2 = getCompositeEvaluation(a);
-			if (a != a2)
-				e = new EvalCompositeAccess(a2, e.getElementId());
-			return e;
-		}
 		if (eval instanceof EvalCompoundStatementExpression) {
 			EvalCompoundStatementExpression e= (EvalCompoundStatementExpression) eval;
 			ICPPEvaluation a = e.getLastEvaluation();
@@ -378,25 +357,6 @@ public class CPPCompositesFactory extends AbstractCompositeFactory {
 			ICPPEvaluation c2 = getCompositeEvaluation(c);
 			if (a != a2 || b != b2 || c != c2 || templateDefinition != compositeTemplateDefinition)
 				e= new EvalConditional(a2, b2, c2, e.isPositiveThrows(), e.isNegativeThrows(), compositeTemplateDefinition);
-			return e;
-		}
-		if (eval instanceof EvalConstructor) {
-			EvalConstructor e = (EvalConstructor) eval;
-			IType a = e.getType();
-			ICPPConstructor b = e.getConstructor();
-			ICPPEvaluation[] c = e.getArguments();
-			IType a2 = getCompositeType(a);
-			ICPPConstructor b2 = b;
-			if (b instanceof IIndexFragmentBinding) {
-				IBinding binding = getCompositeBinding((IIndexFragmentBinding) b);
-				if (binding instanceof ICPPConstructor) {
-					b2 = (ICPPConstructor) binding;
-				}
-			}
-			ICPPEvaluation[] c2 = getCompositeEvaluationArray(c);
-			if (a != a2 || b != b2 || c != c2 || templateDefinition != compositeTemplateDefinition) {
-				e = new EvalConstructor(a2, b2, c2, compositeTemplateDefinition);
-			}
 			return e;
 		}
 		if (eval instanceof EvalFixed) {
@@ -481,51 +441,12 @@ public class CPPCompositesFactory extends AbstractCompositeFactory {
 						compositeTemplateDefinition);
 			return e;
 		}
-		if (eval instanceof EvalNaryTypeId) {
-			EvalNaryTypeId e = (EvalNaryTypeId) eval;
-			IType[] operands = e.getOperands();
-			IType[] operands2 = getCompositeTypes(operands);
-			if (operands != operands2 || templateDefinition != compositeTemplateDefinition) 
-				e = new EvalNaryTypeId(e.getOperator(), operands2, compositeTemplateDefinition);
-			return e;
-		}
 		if (eval instanceof EvalPackExpansion) {
 			EvalPackExpansion e = (EvalPackExpansion) eval;
 			ICPPEvaluation a = e.getExpansionPattern();
 			ICPPEvaluation a2 = getCompositeEvaluation(a);
 			if (a != a2 || templateDefinition != compositeTemplateDefinition)
 				e = new EvalPackExpansion(a2, compositeTemplateDefinition);
-			return e;
-		}
-		// EvalPointer is handled as a sub-case of EvalReference.
-		if (eval instanceof EvalReference) {
-			EvalReference e = (EvalReference) eval;
-			IBinding a = e.getReferredBinding();
-			// TODO: Does the ActivationRecord need conversion to composite bindings?
-			if (a != null) {
-				IBinding a2 = a;
-				if (a instanceof IIndexFragmentBinding) {
-					a2 = getCompositeBinding((IIndexFragmentBinding) a);
-				}
-				if (a != a2 || templateDefinition != compositeTemplateDefinition) {
-					e = new EvalReference(e.getOwningRecord(), a2, compositeTemplateDefinition);
-				}
-			} else {
-				EvalCompositeAccess b = e.getReferredSubValue();
-				EvalCompositeAccess b2 = b;
-				ICPPEvaluation composite = getCompositeEvaluation(b2);
-				if (eval instanceof EvalCompositeAccess) {
-					b2 = (EvalCompositeAccess) composite;
-				}
-				if (b != b2 || templateDefinition != compositeTemplateDefinition) {
-					if (e instanceof EvalPointer) {
-						e = new EvalPointer(e.getOwningRecord(), b2, compositeTemplateDefinition, 
-								((EvalPointer) e).getPosition());
-					} else {
-						e = new EvalReference(e.getOwningRecord(), b2, compositeTemplateDefinition);
-					}
-				}
-			}
 			return e;
 		}
 		if (eval instanceof EvalTypeId) {
@@ -561,7 +482,7 @@ public class CPPCompositesFactory extends AbstractCompositeFactory {
 			return e;
 		}
 		
-		throw new CompositingNotImplementedError(eval.getClass().getName());
+		throw new CompositingNotImplementedError();
 	}
 
 	private ICPPEvaluation[] getCompositeEvaluationArray(ICPPEvaluation[] array) {

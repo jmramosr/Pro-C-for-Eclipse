@@ -514,9 +514,7 @@ public class CModelBuilder2 implements IContributedModelBuilder {
 		} else {
 			final IASTFileLocation nsLocation= declaration.getFileLocation();
 			if (nsLocation != null) {
-				// Note: don't want to call element.setIdPos(), because we want the SourceManipulationInfo
-				//       lookup to go through the local 'fNewElements' cache.
-				getSourceManipulationInfo(element).setIdPos(nsLocation.getNodeOffset(), type.length());
+				element.setIdPos(nsLocation.getNodeOffset(), type.length());
 			}
 		}
 		setBodyPosition(element, declaration);
@@ -1196,11 +1194,12 @@ public class CModelBuilder2 implements IContributedModelBuilder {
 	 *
 	 * @param element
 	 * @param astName
+	 * @throws CModelException
 	 */
-	private void setIdentifierPosition(SourceManipulation element, IASTName astName) {
+	private void setIdentifierPosition(SourceManipulation element, IASTName astName) throws CModelException {
 		setIdentifierPosition(getSourceManipulationInfo(element), astName);
 	}
-	
+
 	/**
 	 * Utility method to set the identifier position of an element from an AST name.
 	 *

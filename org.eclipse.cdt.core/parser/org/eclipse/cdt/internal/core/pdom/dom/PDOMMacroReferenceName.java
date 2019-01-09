@@ -56,8 +56,8 @@ public final class PDOMMacroReferenceName implements IIndexFragmentName {
 
 		// Record our location in the file
 		IASTFileLocation fileloc = name.getFileLocation();
-		db.putInt(record + NODE_OFFSET_OFFSET, fileloc != null ? fileloc.getNodeOffset() : 0);
-		db.putShort(record + NODE_LENGTH_OFFSET, fileloc != null ? (short) fileloc.getNodeLength() : 0);
+		db.putInt(record + NODE_OFFSET_OFFSET, fileloc.getNodeOffset());
+		db.putShort(record + NODE_LENGTH_OFFSET, (short) fileloc.getNodeLength());
 		container.addReference(this);
 		
 		if (caller != null) {
@@ -170,11 +170,6 @@ public final class PDOMMacroReferenceName implements IIndexFragmentName {
 	
 	@Override
 	public boolean couldBePolymorphicMethodCall() throws CoreException {
-		return false;
-	}
-	
-	@Override
-	public boolean isPotentialMatch() throws CoreException {
 		return false;
 	}
 

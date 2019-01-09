@@ -117,14 +117,6 @@ public final class EvalConstructor extends CPPDependentEvaluation {
 	public IType getType() {
 		return fType;
 	}
-	
-	public ICPPConstructor getConstructor() {
-		return fConstructor;
-	}
-	
-	public ICPPEvaluation[] getArguments() {
-		return fArguments;
-	}
 
 	@Override
 	public IValue getValue() {
@@ -184,9 +176,6 @@ public final class EvalConstructor extends CPPDependentEvaluation {
 
 		ICPPField[] fields = classType.getDeclaredFields();
 		for (ICPPField field : fields) {
-			if (field.isStatic()) {
-				continue;
-			}
 			final Map.Entry<IBinding, ICPPEvaluation> initializer =
 					getInitializerFromMemberInitializerList(field, exec);
 

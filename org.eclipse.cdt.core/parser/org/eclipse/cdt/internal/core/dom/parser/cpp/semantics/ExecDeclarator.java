@@ -20,10 +20,8 @@ import org.eclipse.cdt.core.dom.ast.IQualifierType;
 import org.eclipse.cdt.core.dom.ast.IType;
 import org.eclipse.cdt.core.dom.ast.IValue;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPClassSpecialization;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPClassType;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPReferenceType;
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPSpecialization;
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPVariable;
 import org.eclipse.cdt.internal.core.dom.parser.CompositeValue;
 import org.eclipse.cdt.internal.core.dom.parser.ITypeMarshalBuffer;
@@ -224,15 +222,8 @@ public final class ExecDeclarator implements ICPPExecution {
 			ICPPVariable declaredVariable = (ICPPVariable) declaredBinding;
 			newDeclaredBinding = CPPTemplates.createVariableSpecialization(context, declaredVariable);
 		} else {
-			ICPPSpecialization owner = context.getContextSpecialization();
-			if (owner instanceof ICPPClassSpecialization) {
-				newDeclaredBinding = (ICPPBinding) 
-						((ICPPClassSpecialization) owner).specializeMember(declaredBinding);
-			} else {
-				// TODO: Non-class owners should also have a specializeMember() function which
-				//       implements a caching mechanism.
-				newDeclaredBinding = (ICPPBinding) CPPTemplates.createSpecialization(owner, declaredBinding);
-			}
+			newDeclaredBinding = (ICPPBinding) CPPTemplates.createSpecialization(
+					context.getContextSpecialization(), declaredBinding);
 		}
 
 		ICPPEvaluation newInitializerEval =

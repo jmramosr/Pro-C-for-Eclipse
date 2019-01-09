@@ -33,11 +33,6 @@ class PDOMMacroDefinitionName implements IIndexFragmentName {
 	public boolean couldBePolymorphicMethodCall() throws CoreException {
 		return false;
 	}
-	
-	@Override
-	public boolean isPotentialMatch() throws CoreException {
-		return false;
-	}
 
 	@Override
 	public IIndexName[] getEnclosedNames() throws CoreException {

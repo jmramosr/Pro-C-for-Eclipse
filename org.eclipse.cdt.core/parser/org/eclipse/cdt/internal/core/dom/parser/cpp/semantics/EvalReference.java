@@ -27,7 +27,7 @@ public class EvalReference extends CPPDependentEvaluation {
 	protected IBinding referredBinding;
 	protected EvalCompositeAccess referredSubValue;
 
-	public EvalReference(ActivationRecord owningRecord, IBinding referredBinding, IBinding templateDefinition) {
+	EvalReference(ActivationRecord owningRecord, IBinding referredBinding, IBinding templateDefinition) {
 		super(templateDefinition);
 		this.owningRecord = owningRecord;
 		this.referredBinding = referredBinding;
@@ -37,7 +37,7 @@ public class EvalReference extends CPPDependentEvaluation {
 		this(owningRecord, referredBinding, findEnclosingTemplate(point));
 	}
 
-	public EvalReference(ActivationRecord owningRecord, EvalCompositeAccess referredSubValue, IBinding templateDefinition) {
+	EvalReference(ActivationRecord owningRecord, EvalCompositeAccess referredSubValue, IBinding templateDefinition) {
 		super(templateDefinition);
 		this.owningRecord = owningRecord;
 		this.referredSubValue = referredSubValue;
@@ -46,14 +46,6 @@ public class EvalReference extends CPPDependentEvaluation {
 
 	EvalReference(ActivationRecord owningRecord, EvalCompositeAccess referredSubValue, IASTNode point) {
 		this(owningRecord, referredSubValue, findEnclosingTemplate(point));
-	}
-	
-	public ActivationRecord getOwningRecord() {
-		return owningRecord;
-	}
-	
-	public EvalCompositeAccess getReferredSubValue() {
-		return referredSubValue;
 	}
 
 	@Override

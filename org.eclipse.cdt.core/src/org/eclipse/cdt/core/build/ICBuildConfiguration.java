@@ -124,7 +124,7 @@ public interface ICBuildConfiguration extends IAdaptable, IScannerInfoProvider {
 	 * @throws CoreException
 	 */
 	void clean(IConsole console, IProgressMonitor monitor) throws CoreException;
-	
+
 	/**
 	 * The binaries produced by the build.
 	 * 

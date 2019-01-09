@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,12 +58,14 @@ public class ToolChainManager implements IToolChainManager {
 				switch (element.getName()) {
 				case "provider": //$NON-NLS-1$
 					// TODO check for enablement
-					SafeRunner.run(() -> {
+					try {
 						IToolChainProvider provider = (IToolChainProvider) element
 								.createExecutableExtension("class"); //$NON-NLS-1$
 						providers.put(element.getAttribute("id"), provider); //$NON-NLS-1$
-						provider.init(ToolChainManager.this);
-					});
+						provider.init(this);
+					} catch (CoreException e) {
+						CCorePlugin.log(e);
+					}
 					break;
 				case "type": //$NON-NLS-1$
 					toolChainTypeNames.put(element.getAttribute("id"), element.getAttribute("name")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -132,7 +133,7 @@ public class ToolChainManager implements IToolChainManager {
 	public void addToolChain(IToolChain toolChain) {
 		Map<String, IToolChain> type = toolChains.get(toolChain.getTypeId());
 		if (type == null) {
-			type = new LinkedHashMap<>(); // use LinkedHashMap so input order is maintained
+			type = new HashMap<>();
 			toolChains.put(toolChain.getTypeId(), type);
 		}
 		type.put(toolChain.getId(), toolChain);
@@ -167,12 +168,8 @@ public class ToolChainManager implements IToolChainManager {
 		if (provider == null) {
 			IConfigurationElement element = providerElements.get(providerId);
 			if (element != null) {
-				SafeRunner.run(() ->{
-					IToolChainProvider provider2 = (IToolChainProvider) element.createExecutableExtension("class"); //$NON-NLS-1$
-					providers.put(providerId, provider2);
-					provider2.init(ToolChainManager.this);
-				});
-				return providers.get(providerId);
+				provider = (IToolChainProvider) element.createExecutableExtension("class"); //$NON-NLS-1$
+				providers.put(providerId, provider);
 			}
 		}
 		return provider;
@@ -189,21 +186,19 @@ public class ToolChainManager implements IToolChainManager {
 	public Collection<IToolChain> getToolChainsMatching(Map<String, String> properties) {
 		init();
 		List<IToolChain> tcs = new ArrayList<>();
-		if (orderedToolChains != null) {
-			for (IToolChain toolChain : orderedToolChains) {
-				boolean matches = true;
-				for (Map.Entry<String, String> property : properties.entrySet()) {
-					String tcProperty = toolChain.getProperty(property.getKey());
-					if (tcProperty != null) {
-						if (!property.getValue().equals(tcProperty)) {
-							matches = false;
-							break;
-						}
+		for (IToolChain toolChain : orderedToolChains) {
+			boolean matches = true;
+			for (Map.Entry<String, String> property : properties.entrySet()) {
+				String tcProperty = toolChain.getProperty(property.getKey());
+				if (tcProperty != null) {
+					if (!property.getValue().equals(tcProperty)) {
+						matches = false;
+						break;
 					}
 				}
-				if (matches) {
-					tcs.add(toolChain);
-				}
+			}
+			if (matches) {
+				tcs.add(toolChain);
 			}
 		}
 

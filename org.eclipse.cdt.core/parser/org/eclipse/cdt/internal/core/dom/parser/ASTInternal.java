@@ -275,13 +275,11 @@ public class ASTInternal {
 	public static boolean hasNonFriendDeclaration(ICPPInternalBinding binding) {
 		if (binding.getDefinition() != null)
 			return true;
-		IASTNode[] declarations = binding.getDeclarations();
-		if (declarations != null) {
-			for (IASTNode node : declarations) {
-				if (!CPPVisitor.isNameOfFriendDeclaration(node))
-					return true; 
-			}
+		for (IASTNode node : binding.getDeclarations()) {
+			if (!CPPVisitor.isNameOfFriendDeclaration(node))
+				return true; 
 		}
+
 		return false;
 	}
 }
