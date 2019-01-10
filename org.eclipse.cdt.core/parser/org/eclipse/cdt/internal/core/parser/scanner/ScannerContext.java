@@ -23,9 +23,9 @@ import org.eclipse.cdt.core.parser.util.CharArraySet;
  * Represents part of the input to the preprocessor. This may be a file or the result of a macro expansion.
  * @since 5.0
  */
-final class ScannerContext {
+public final class ScannerContext {
 	enum BranchKind { eIf, eElif, eElse, eEnd }
-	enum CodeState { eActive, eParseInactive, eSkipInactive }
+	public enum CodeState { eActive, eParseInactive, eSkipInactive }
 
 	final static class Conditional {
 		private final CodeState fInitialState;
