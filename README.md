@@ -71,7 +71,7 @@ Original work by https://github.com/buntatsu/cdt-proc. The firsts commits are, i
 
 ✔️ Renaming the original plugin.
 
-❌️ Upload every version.
+✔️ Upload every version.
 
 ❌️ Buglist of everyday use.
 
